@@ -220,9 +220,6 @@ export default function TRX16Hero({ userName }: { userName: string }) {
           }}>
             Rastreador Veicular · <strong style={{ color: accent }}>2G</strong> / <strong style={{ color: accent }}>4G CTA-1</strong>
           </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', marginBottom: 44 }}>
-            {userName}
-          </div>
           <div className="trx-bob" style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
             color: 'rgba(255,255,255,.2)', fontSize: 10,
