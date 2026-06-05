@@ -27,12 +27,13 @@ export default function TRX16Hero({ userName }: { userName: string }) {
     introOp: 1, card1In: false, card2In: false, pfill: 0,
   });
 
-  // measure container height
+  // measure container height after mount so it reflects the real rendered size
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    setCh(el.clientHeight);
-    const ro = new ResizeObserver(() => setCh(el.clientHeight));
+    const measure = () => setCh(el.getBoundingClientRect().height || el.clientHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -70,10 +71,13 @@ export default function TRX16Hero({ userName }: { userName: string }) {
       style={{
         position: 'relative',
         width: '100%',
-        height: 'calc(100vh - 56px)', // 56px = altura da nav
+        height: '70vh',
+        minHeight: 480,
         overflowY: 'scroll',
         scrollbarWidth: 'none',
         background: 'transparent',
+        borderRadius: 16,
+        border: '1px solid rgba(255,255,255,0.05)',
       }}
       className="[&::-webkit-scrollbar]:hidden"
     >
@@ -141,6 +145,11 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         textAlign: 'center', opacity: s.introOp,
         transition: 'opacity .05s linear', pointerEvents: 'none', zIndex: 2,
       }}>
+        <img
+          src="/logo.png"
+          alt="Arqia"
+          style={{ height: 36, objectFit: 'contain', marginBottom: 16, opacity: 0.85 }}
+        />
         <div style={{
           fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase',
           color: '#21C8D4', marginBottom: 20, opacity: 0.8,

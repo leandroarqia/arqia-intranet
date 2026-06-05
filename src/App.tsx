@@ -161,9 +161,11 @@ export default function App() {
                 <motion.div key={activeView} variants={containerVariants} initial="hidden" animate="visible" exit="hidden">
                   {activeView !== 'dashboard' && (<motion.div variants={itemVariants} className="mb-6"><h2 className="text-2xl font-bold tracking-tight">{activeView === 'clientes' && 'Controle de Clientes'}{activeView === 'importar' && 'Importar Dispositivos'}{activeView === 'base-cliente' && 'Base do Cliente'}</h2></motion.div>)}
                   {activeView === 'dashboard' && (
-                    <motion.div variants={itemVariants} style={{ margin: '-24px' }}>
+                    <motion.div variants={itemVariants}>
+                      <h2 className="text-3xl font-bold mb-2">{(() => { const h = new Date().getHours(); const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; return <>{s}, <span className="text-[#00D1C1]">{user.name}</span>!</>; })()}</h2>
+                      <p className="text-white/50 text-sm mb-6">Painel de controle — Device Intranet Arqia</p>
                       {isUserAdmin && !hasSupabase && (
-                        <div className="mx-6 mt-6 p-4 bg-yellow-900/20 border border-yellow-700/40 rounded-xl">
+                        <div className="mb-6 p-4 bg-yellow-900/20 border border-yellow-700/40 rounded-xl">
                           <p className="text-yellow-300 font-semibold text-sm mb-1">⚠️ Banco de dados não configurado</p>
                           <p className="text-yellow-200/70 text-xs">Os dados estão salvos apenas no seu navegador.</p>
                         </div>
