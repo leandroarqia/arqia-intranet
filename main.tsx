@@ -6,7 +6,7 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Shield, User, BarChart3, Globe, Loader2 } from 'lucide-react';
 import {
   dbLogin, dbGetDevices, dbSaveDevices, dbDeleteDevice,
