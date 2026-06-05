@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arqia — Device Intranet</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#03080f;
+  --accent:#21c8d4;
+  --ink:#f0f4f8;
+  --muted:#4a5a6a;
+  --line:rgba(255,255,255,.06);
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ── PROGRESS BAR ── */
+#pbar{position:fixed;top:0;left:0;right:0;height:2px;z-index:100;background:rgba(255,255,255,.04)}
+#pfill{height:100%;background:var(--accent);width:0;transition:width .04s linear}
+
+/* ── LABEL ── */
+#alabel{
+  position:fixed;bottom:26px;left:50%;transform:translateX(-50%);
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:#2a3a4a;z-index:50;font-family:ui-monospace,monospace;
+}
+
+/* ── LOGO HERO ── */
+.hero{
+  position:fixed;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:0;
+}
+.hero__wrap{
+  position:relative;
+  width:min(28vw,280px);
+  height:min(28vw,280px);
+}
+.hero__wrap img{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:contain;object-position:center;
+  opacity:0;
+  transition:opacity .5s ease;
+  filter:drop-shadow(0 20px 40px rgba(0,0,0,.85)) drop-shadow(0 0 30px rgba(33,200,212,.12));
+}
+.hero__wrap img.on{opacity:1}
+.hero__glow{
+  position:absolute;bottom:-8%;left:50%;transform:translateX(-50%);
+  width:90%;height:28%;
+  background:radial-gradient(ellipse,rgba(33,200,212,.10) 0%,transparent 70%);
+}
+.hero__shadow{
+  position:absolute;bottom:-4%;left:50%;transform:translateX(-50%);
+  width:60%;height:12px;
+  background:radial-gradient(ellipse,rgba(0,0,0,.6) 0%,transparent 70%);
+  filter:blur(6px);
+}
+
+/* ── SCROLLABLE DRIVER ── */
+.driver{position:relative;z-index:1;height:500vh}
+
+/* ── INTRO ── */
+.intro{
+  position:sticky;top:0;height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;z-index:2;
+  pointer-events:none;padding:0 20px;
+}
+.intro__eye{
+  font-size:11px;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--accent);
+  margin-bottom:16px;opacity:.8;
+}
+.intro__title{
+  font-size:clamp(36px,6vw,72px);
+  font-weight:900;
+  letter-spacing:-.04em;
+  line-height:1;
+  margin-bottom:20px;
+  background:linear-gradient(135deg,#ffffff 30%,#b8e8f0 65%,var(--accent) 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.intro__rule{
+  width:40px;height:3px;
+  background:var(--accent);border-radius:3px;
+  margin:0 auto 16px;opacity:.7;
+}
+.intro__sub{
+  font-size:14px;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:#c8dde8;
+  font-family:ui-monospace,monospace;
+  margin-bottom:48px;
+}
+.intro__sub strong{color:var(--accent);font-weight:600}
+.scroll-arrow{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  color:#2a3a4a;font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;
+  animation:bob 2.2s ease infinite;
+}
+.scroll-arrow__line{
+  width:1px;height:40px;
+  background:linear-gradient(to bottom,transparent,var(--accent),transparent);
+}
+@keyframes bob{
+  0%,100%{opacity:.2;transform:translateY(0)}
+  50%{opacity:.6;transform:translateY(-5px)}
+}
+
+/* ── SECTIONS ── */
+.sec{
+  position:sticky;top:0;height:100vh;
+  display:flex;align-items:center;
+  padding:0 7vw;pointer-events:none;
+}
+.sec--left{justify-content:flex-start}
+.sec--right{justify-content:flex-end}
+
+/* ── CARD ── */
+.card{
+  max-width:380px;pointer-events:auto;
+  opacity:0;transform:translateY(32px);
+  transition:opacity .7s ease,transform .7s ease;
+}
+.card.in{opacity:1;transform:translateY(0)}
+.card__tag{
+  font-size:10px;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--accent);
+  margin-bottom:12px;
+}
+.card__title{
+  font-size:clamp(32px,4vw,54px);
+  font-weight:800;letter-spacing:-.03em;line-height:1.02;
+  margin-bottom:16px;
+}
+.card__title em{font-style:normal;color:var(--accent)}
+.card__body{
+  font-size:14px;line-height:1.85;
+  color:#6a7d90;margin-bottom:24px;
+}
+.specs{width:100%;border-collapse:collapse}
+.specs tr{border-bottom:1px solid var(--line)}
+.specs tr:last-child{border-bottom:none}
+.specs td{padding:10px 0;font-size:13px;vertical-align:middle}
+.specs td:first-child{color:var(--muted);width:55%;padding-right:10px}
+.specs td:last-child{color:var(--ink);font-weight:500;text-align:right}
+.badge{
+  display:inline-block;
+  background:rgba(33,200,212,.10);color:var(--accent);
+  border:1px solid rgba(33,200,212,.18);
+  border-radius:4px;font-size:11px;padding:2px 8px;
+  font-family:ui-monospace,monospace;
+}
+
+/* ── CTA ── */
+.cta-section{
+  position:sticky;top:0;height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;z-index:3;
+  pointer-events:none;
+}
+.cta-section .card{max-width:480px;text-align:center}
+.cta-section .card__title{font-size:clamp(28px,4vw,48px)}
+.enter-btn{
+  display:inline-block;
+  margin-top:32px;
+  padding:14px 40px;
+  background:transparent;
+  border:1px solid rgba(33,200,212,.4);
+  color:var(--accent);
+  font-family:ui-monospace,monospace;
+  font-size:12px;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  text-decoration:none;
+  cursor:pointer;
+  border-radius:0;
+  pointer-events:auto;
+  transition:background .3s,border-color .3s,color .3s;
+}
+.enter-btn:hover{
+  background:rgba(33,200,212,.12);
+  border-color:var(--accent);
+  color:#fff;
+}
+</style>
+</head>
+<body>
+
+<div id="pbar"><div id="pfill"></div></div>
+<div id="alabel">ARQIA — DEVICE INTRANET</div>
+
+<!-- Logo flutuante -->
+<div class="hero">
+  <div class="hero__wrap" id="canvas">
+    <div class="hero__glow"></div>
+    <div class="hero__shadow"></div>
+    <img src="/logo.png" alt="Arqia" class="on" id="logo-img">
+  </div>
+</div>
+
+<div class="driver" id="driver">
+
+  <!-- INTRO -->
+  <div class="intro" id="intro">
+    <div class="intro__eye">Device Intranet &middot; Arqia Telecom</div>
+    <div class="intro__title">ARQIA</div>
+    <div class="intro__rule"></div>
+    <div class="intro__sub">
+      Gestão de Dispositivos &nbsp;&middot;&nbsp;
+      <strong>SIM Cards</strong> &nbsp;/&nbsp; <strong>ICCID</strong>
+    </div>
+    <div class="scroll-arrow">
+      <span>Role para explorar</span>
+      <div class="scroll-arrow__line"></div>
+    </div>
+  </div>
+
+  <!-- SEÇÃO 1 -->
+  <div class="sec sec--left" id="sec1">
+    <div class="card" id="card1">
+      <div class="card__tag">Controle Total</div>
+      <h2 class="card__title">Dados em<br><em>tempo real.</em></h2>
+      <p class="card__body">Importe, consulte e gerencie todos os dispositivos da sua frota em um único painel. ICCID, IMEI, cliente e cotação — organizados e acessíveis.</p>
+      <table class="specs">
+        <tr><td>Importação CSV</td><td>Automática</td></tr>
+        <tr><td>Exportação Excel</td><td><span class="badge">XLSX</span></td></tr>
+        <tr><td>Busca por ICCID/IMEI</td><td>Instantânea</td></tr>
+        <tr><td>Deduplicação</td><td>Automática</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- SEÇÃO 2 -->
+  <div class="sec sec--right" id="sec2">
+    <div class="card" id="card2">
+      <div class="card__tag">Base de Clientes</div>
+      <h2 class="card__title">Cada cliente,<br><em>na ponta.</em></h2>
+      <p class="card__body">Gerencie a base completa de clientes com CNPJ, razão social, código e status. Vincule dispositivos diretamente a cada conta.</p>
+      <table class="specs">
+        <tr><td>Perfis ADM / Suporte</td><td>Sim</td></tr>
+        <tr><td>Status do cliente</td><td>Ativo / Inadimplente</td></tr>
+        <tr><td>Código do cliente</td><td>Vinculado</td></tr>
+        <tr><td>Banco de dados</td><td><span class="badge">Supabase</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- SEÇÃO 3 / CTA -->
+  <div class="cta-section" id="sec3">
+    <div class="card" id="card3">
+      <div class="card__tag">Acesso Restrito &middot; Equipe Arqia</div>
+      <h2 class="card__title">Pronto para<br><em>começar?</em></h2>
+      <p class="card__body">Use suas credenciais corporativas para acessar o painel de controle de dispositivos Arqia.</p>
+      <a href="/" class="enter-btn" id="enter-btn">Entrar no sistema &rarr;</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var driver = document.getElementById('driver');
+  var pfill  = document.getElementById('pfill');
+  var cards  = [
+    document.getElementById('card1'),
+    document.getElementById('card2'),
+    document.getElementById('card3'),
+  ];
+  var secs   = [
+    document.getElementById('sec1'),
+    document.getElementById('sec2'),
+    document.getElementById('sec3'),
+  ];
+  var intro  = document.getElementById('intro');
+
+  function lerp(a,b,t){return a+(b-a)*t}
+
+  function onScroll(){
+    var scrollY = window.scrollY;
+    var dH = driver.scrollHeight - window.innerHeight;
+    var t  = Math.min(1, scrollY / dH);
+
+    pfill.style.width = (t*100)+'%';
+
+    var ioTop = intro.getBoundingClientRect().top;
+    var introFade = Math.max(0, Math.min(1, (-ioTop) / (window.innerHeight * .4)));
+    intro.style.opacity = 1 - introFade;
+    intro.style.transform = 'translateY('+(introFade * -30)+'px)';
+
+    secs.forEach(function(sec, i){
+      var r = sec.getBoundingClientRect();
+      var card = cards[i];
+      var show = r.top < window.innerHeight * .75 && r.bottom > 0;
+      if(show) card.classList.add('in');
+      else      card.classList.remove('in');
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  document.getElementById('enter-btn').addEventListener('click', function(e){
+    e.preventDefault();
+    window.location.href = '/';
+  });
+})();
+</script>
+</body>
+</html>
