@@ -1,5 +1,4 @@
-import { useRef, useEffect, useRef as _, type ReactNode } from 'react';
-import { useRef as _2 } from 'react';
+import { useRef, useEffect, type ReactNode } from 'react';
 
 const IMGS = [
   { src: '/trx16_0.png', label: 'Frente',   rot: 0   },
@@ -10,51 +9,39 @@ const DRIVER_H = 2800;
 const accent   = '#21C8D4';
 
 export default function TRX16Hero({ userName }: { userName: string }) {
-  // scroll container — só contém o driver
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // overlays — ficam fora do scroll, nunca cortados
+  const containerRef  = useRef<HTMLDivElement>(null);
   const canvasWrapRef = useRef<HTMLDivElement>(null);
   const imgRefs       = useRef<(HTMLImageElement | null)[]>([]);
   const introWRef     = useRef<HTMLDivElement>(null);
   const card1Ref      = useRef<HTMLDivElement>(null);
   const card2Ref      = useRef<HTMLDivElement>(null);
-  const labelRef      = useRef<HTMLDivElement>(null);
-
-  let curImg = 0;
-
-  function show(i: number) {
-    if (i === curImg) return;
-    imgRefs.current[curImg]?.classList.remove('trx-on');
-    curImg = i;
-    imgRefs.current[curImg]?.classList.add('trx-on');
-    if (labelRef.current) labelRef.current.textContent = IMGS[i].label;
-  }
+  const labelRef      = useRef<HTMLSpanElement>(null);
+  const curImg        = useRef(0);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    function show(i: number) {
+      if (i === curImg.current) return;
+      imgRefs.current[curImg.current]?.classList.remove('trx-on');
+      curImg.current = i;
+      imgRefs.current[curImg.current]?.classList.add('trx-on');
+      if (labelRef.current) labelRef.current.textContent = IMGS[i].label;
+    }
+
     function onScroll() {
-      const st  = container!.scrollTop;
-      const max = DRIVER_H - container!.clientHeight;
+      const st  = container.scrollTop;
+      const max = DRIVER_H - container.clientHeight;
       const dp  = max > 0 ? Math.max(0, Math.min(st / max, 1)) : 0;
 
-      // device parallax
-      if (canvasWrapRef.current) {
-        const py = (dp - 0.4) * 22;
-        canvasWrapRef.current.style.transform = `translateY(${py}px)`;
-      }
+      if (canvasWrapRef.current)
+        canvasWrapRef.current.style.transform = `translateY(${(dp - 0.4) * 22}px)`;
 
-      // intro fade
-      if (introWRef.current) {
-        introWRef.current.style.opacity = `${Math.max(0, 1 - st / (container!.clientHeight * 0.55))}`;
-      }
+      if (introWRef.current)
+        introWRef.current.style.opacity = `${Math.max(0, 1 - st / (container.clientHeight * 0.55))}`;
 
-      // flip imagem
       show(dp < 0.54 ? 0 : 1);
-
-      // cards
       card1Ref.current?.classList.toggle('trx-card-in', dp >= 0.10);
       card2Ref.current?.classList.toggle('trx-card-in', dp >= 0.56);
     }
@@ -67,60 +54,60 @@ export default function TRX16Hero({ userName }: { userName: string }) {
   return (
     <>
       <style>{`
-        .trx-hero-container::-webkit-scrollbar { display: none; }
+        .trx-scroll::-webkit-scrollbar { display: none; }
         .trx-img {
           position: absolute; inset: 0; width: 100%; height: 100%;
-          object-fit: contain; object-position: center;
-          opacity: 0; transition: opacity .5s ease;
+          object-fit: contain; object-position: center; opacity: 0;
+          transition: opacity .5s ease;
           filter: drop-shadow(0 28px 56px rgba(0,0,0,.85)) drop-shadow(0 0 40px rgba(33,200,212,.09));
           user-select: none; pointer-events: none;
         }
         .trx-img.trx-on { opacity: 1; }
         .trx-card {
           opacity: 0; transform: translateY(36px);
-          transition: opacity .7s ease, transform .7s ease;
-          pointer-events: auto;
+          transition: opacity .7s ease, transform .7s ease; pointer-events: auto;
         }
         .trx-card.trx-card-in { opacity: 1; transform: translateY(0); }
         @keyframes trx-bob {
-          0%,100% { opacity: .2; transform: translateY(0); }
-          50%      { opacity: .65; transform: translateY(-6px); }
+          0%,100% { opacity:.2; transform:translateY(0); }
+          50%      { opacity:.65; transform:translateY(-6px); }
         }
         .trx-bob { animation: trx-bob 2.2s ease infinite; }
       `}</style>
 
-      {/* wrapper — position:relative para todos os overlays */}
+      {/* wrapper relativo — todos os overlays são filhos diretos, fora do scroll */}
       <div style={{ position: 'relative', width: '100%', height: '72vh', minHeight: 500 }}>
 
-        {/* ── scroll container — só contém o driver ── */}
-        <div
-          ref={containerRef}
-          className="trx-hero-container"
-          style={{ position: 'absolute', inset: 0, overflowY: 'scroll', scrollbarWidth: 'none', zIndex: 0 }}
-        >
+        {/* scroll container — só contém o driver div invisível */}
+        <div ref={containerRef} className="trx-scroll"
+          style={{ position: 'absolute', inset: 0, overflowY: 'scroll', scrollbarWidth: 'none' }}>
           <div style={{ height: DRIVER_H }} />
         </div>
 
         {/* ── saudação — canto superior esquerdo ── */}
         <div style={{ position: 'absolute', top: 28, left: 32, zIndex: 10, pointerEvents: 'none' }}>
-          <Greeting userName={userName} />
+          <h2 style={{ fontSize: 'clamp(20px,2.2vw,28px)', fontWeight: 700, lineHeight: 1.2, marginBottom: 4, color: '#fff' }}>
+            {(() => { const h = new Date().getHours(); const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; return <>{s}, <span style={{ color: '#00D1C1' }}>{userName}</span>!</>; })()}
+          </h2>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Painel de controle — Device Intranet Arqia</p>
         </div>
 
         {/* ── device canvas — centralizado ── */}
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 1 }}>
-          <div ref={canvasWrapRef} style={{ position: 'relative', width: 'min(44%, 320px)', aspectRatio: '1', willChange: 'transform' }}>
+          <div ref={canvasWrapRef} style={{ position: 'relative', width: 'min(44%,320px)', aspectRatio: '1', willChange: 'transform' }}>
             {IMGS.map((img, i) => (
-              <img key={i} ref={el => { imgRefs.current[i] = el; }} src={img.src} alt={img.label}
-                draggable={false} className={`trx-img${i === 0 ? ' trx-on' : ''}`}
+              <img key={i} ref={el => { imgRefs.current[i] = el; }}
+                src={img.src} alt={img.label} draggable={false}
+                className={`trx-img${i === 0 ? ' trx-on' : ''}`}
                 style={{ transform: `rotate(${img.rot}deg)` }} />
             ))}
-            <div style={{ position: 'absolute', bottom: '-8%', left: '50%', transform: 'translateX(-50%)', width: '90%', height: '32%', background: 'radial-gradient(ellipse, rgba(33,200,212,.13) 0%, transparent 70%)' }} />
-            <div style={{ position: 'absolute', bottom: '-4%', left: '50%', transform: 'translateX(-50%)', width: '60%', height: 14, background: 'radial-gradient(ellipse, rgba(0,0,0,.65) 0%, transparent 70%)', filter: 'blur(8px)' }} />
+            <div style={{ position: 'absolute', bottom: '-8%', left: '50%', transform: 'translateX(-50%)', width: '90%', height: '32%', background: 'radial-gradient(ellipse,rgba(33,200,212,.13) 0%,transparent 70%)' }} />
+            <div style={{ position: 'absolute', bottom: '-4%', left: '50%', transform: 'translateX(-50%)', width: '60%', height: 14, background: 'radial-gradient(ellipse,rgba(0,0,0,.65) 0%,transparent 70%)', filter: 'blur(8px)' }} />
           </div>
         </div>
 
         {/* ── intro — centro, some ao rolar ── */}
-        <div ref={introWRef} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', pointerEvents: 'none', zIndex: 2, padding: '0 24px' }}>
+        <div ref={introWRef} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', pointerEvents: 'none', zIndex: 2 }}>
           <div style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 16, opacity: 0.8 }}>Device Intranet · Arqia</div>
           <div style={{ fontSize: 'clamp(44px,5vw,68px)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 14, background: 'linear-gradient(135deg,#fff 30%,#b8e8f0 65%,#21C8D4 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>TRX-16</div>
           <div style={{ width: 40, height: 3, background: accent, borderRadius: 3, margin: '0 auto 16px', opacity: 0.7 }} />
@@ -129,7 +116,7 @@ export default function TRX16Hero({ userName }: { userName: string }) {
           </div>
           <div className="trx-bob" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.2)', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
             <span>Role para explorar</span>
-            <div style={{ width: 1, height: 44, background: `linear-gradient(to bottom, transparent, ${accent}, transparent)` }} />
+            <div style={{ width: 1, height: 44, background: `linear-gradient(to bottom,transparent,${accent},transparent)` }} />
           </div>
         </div>
 
@@ -156,8 +143,10 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         </div>
 
         {/* ── label frente/traseira ── */}
-        <div ref={labelRef} style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', fontSize: 10, letterSpacing: '0.22em', color: 'rgba(255,255,255,.3)', fontWeight: 600, textTransform: 'uppercase', whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 }}>
-          {IMGS[0].label}
+        <div style={{ position: 'absolute', bottom: 12, left: 0, right: 0, textAlign: 'center', pointerEvents: 'none', zIndex: 10 }}>
+          <span ref={labelRef} style={{ fontSize: 10, letterSpacing: '0.22em', color: 'rgba(255,255,255,.3)', fontWeight: 600, textTransform: 'uppercase' }}>
+            {IMGS[0].label}
+          </span>
         </div>
 
       </div>
@@ -187,18 +176,5 @@ function CardContent({ tag, title, body, rows, accent }: {
         </tbody>
       </table>
     </>
-  );
-}
-
-function Greeting({ userName }: { userName: string }) {
-  const h = new Date().getHours();
-  const greeting = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
-  return (
-    <div>
-      <h2 style={{ fontSize: 'clamp(22px,2.5vw,30px)', fontWeight: 700, lineHeight: 1.2, marginBottom: 4, color: '#fff' }}>
-        {greeting}, <span style={{ color: '#00D1C1' }}>{userName}</span>!
-      </h2>
-      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Painel de controle — Device Intranet Arqia</p>
-    </div>
   );
 }
