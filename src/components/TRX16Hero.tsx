@@ -117,32 +117,31 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         .trx-bob { animation: trx-bob 2.2s ease infinite; }
       `}</style>
 
-      <div
-        ref={containerRef}
-        className="trx-hero-container"
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '72vh',
-          minHeight: 500,
-          overflowY: 'scroll',
-          overflowX: 'visible',
-          scrollbarWidth: 'none',
-          background: 'transparent',
-        }}
-      >
-        {/* driver */}
-        <div style={{ height: DRIVER_H }} />
+      {/* wrapper relativo — overlays ficam aqui fora do scroll */}
+      <div style={{ position: 'relative', width: '100%', height: '72vh', minHeight: 500 }}>
 
-        {/* ── saudação overlay (canto superior esquerdo) ── */}
+        {/* ── saudação — overlay externo, nunca cortada pelo overflow ── */}
         <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: '100%',
-          display: 'flex', flexDirection: 'column',
-          justifyContent: 'flex-start', padding: '28px 0 0 32px',
-          pointerEvents: 'none', zIndex: 4,
+          position: 'absolute', top: 28, left: 32, zIndex: 10,
+          pointerEvents: 'none',
         }}>
           <Greeting userName={userName} />
         </div>
+
+        {/* ── scroll container ── */}
+        <div
+          ref={containerRef}
+          className="trx-hero-container"
+          style={{
+            position: 'absolute', inset: 0,
+            overflowY: 'scroll',
+            overflowX: 'hidden',
+            scrollbarWidth: 'none',
+            background: 'transparent',
+          }}
+        >
+        {/* driver */}
+        <div style={{ height: DRIVER_H }} />
 
         {/* progress bar oculta — mantém refs sem renderizar */}
         <div ref={pbarRef} style={{ display: 'none' }}>
@@ -186,50 +185,6 @@ export default function TRX16Hero({ userName }: { userName: string }) {
           </div>
         </div>
 
-        {/* ── intro ── */}
-        <div ref={introWRef} style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: '100%',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          textAlign: 'center', pointerEvents: 'none', zIndex: 2, padding: '0 24px',
-          willChange: 'opacity',
-        }}>
-          <div style={{
-            fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase',
-            color: accent, marginBottom: 16, opacity: 0.8,
-          }}>
-            Device Intranet · Arqia
-          </div>
-          <div style={{
-            fontSize: 'clamp(32px,3.5vw,48px)', fontWeight: 900,
-            letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 14,
-            background: 'linear-gradient(135deg,#fff 30%,#b8e8f0 65%,#21C8D4 100%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            maxWidth: '100%', overflow: 'hidden',
-          }}>
-            TRX-16
-          </div>
-          <div style={{ width: 40, height: 3, background: accent, borderRadius: 3, margin: '0 auto 16px', opacity: 0.7 }} />
-          <div style={{
-            fontSize: 13, letterSpacing: '0.18em', textTransform: 'uppercase',
-            color: '#c8dde8', fontFamily: 'ui-monospace,monospace', marginBottom: 12,
-            textShadow: `0 0 24px rgba(33,200,212,.45)`,
-          }}>
-            Rastreador Veicular · <strong style={{ color: accent }}>2G</strong> / <strong style={{ color: accent }}>4G CTA-1</strong>
-          </div>
-          <div className="trx-bob" style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-            color: 'rgba(255,255,255,.2)', fontSize: 10,
-            letterSpacing: '0.18em', textTransform: 'uppercase',
-          }}>
-            <span>Role para explorar</span>
-            <div style={{
-              width: 1, height: 44,
-              background: `linear-gradient(to bottom, transparent, ${accent}, transparent)`,
-            }} />
-          </div>
-        </div>
 
         {/* ── card 1 — esquerda ── */}
         <div ref={card1WRef} style={{
@@ -291,7 +246,40 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         }}>
           {IMGS[0].label}
         </div>
-      </div>
+
+        </div>{/* fim scroll container */}
+
+        {/* ── intro overlay — fora do scroll, nunca cortado ── */}
+        <div ref={introWRef} style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          textAlign: 'center', pointerEvents: 'none', zIndex: 5, padding: '0 24px',
+          willChange: 'opacity',
+        }}>
+          <div style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 16, opacity: 0.8 }}>
+            Device Intranet · Arqia
+          </div>
+          <div style={{
+            fontSize: 'clamp(40px,5vw,64px)', fontWeight: 900,
+            letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 14,
+            background: 'linear-gradient(135deg,#fff 30%,#b8e8f0 65%,#21C8D4 100%)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}>
+            TRX-16
+          </div>
+          <div style={{ width: 40, height: 3, background: accent, borderRadius: 3, margin: '0 auto 16px', opacity: 0.7 }} />
+          <div style={{ fontSize: 13, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#c8dde8', fontFamily: 'ui-monospace,monospace', marginBottom: 12, textShadow: `0 0 24px rgba(33,200,212,.45)` }}>
+            Rastreador Veicular · <strong style={{ color: accent }}>2G</strong> / <strong style={{ color: accent }}>4G CTA-1</strong>
+          </div>
+          <div className="trx-bob" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,.2)', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+            <span>Role para explorar</span>
+            <div style={{ width: 1, height: 44, background: `linear-gradient(to bottom, transparent, ${accent}, transparent)` }} />
+          </div>
+        </div>
+
+      </div>{/* fim wrapper */}
     </>
   );
 }
