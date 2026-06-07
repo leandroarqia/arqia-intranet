@@ -10,8 +10,7 @@ const accent   = '#21C8D4';
 const H        = 520;
 
 export default function TRX16Hero({ userName }: { userName: string }) {
-  const wrapRef   = useRef<HTMLDivElement>(null);
-  const driverRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const img0Ref   = useRef<HTMLImageElement>(null);
   const img1Ref   = useRef<HTMLImageElement>(null);
@@ -20,13 +19,16 @@ export default function TRX16Hero({ userName }: { userName: string }) {
   const card2Ref  = useRef<HTMLDivElement>(null);
   const labelRef  = useRef<HTMLSpanElement>(null);
   const curImg    = useRef(0);
-  const scrollY   = useRef(0);
 
   useEffect(() => {
-    const wrap = wrapRef.current;
-    if (!wrap) return;
+    const el = scrollRef.current;
+    if (!el) return;
 
-    function applyProgress(dp: number) {
+    function onScroll() {
+      const st  = el.scrollTop;
+      const max = DRIVER_H - el.clientHeight;
+      const dp  = max > 0 ? Math.max(0, Math.min(st / max, 1)) : 0;
+
       if (canvasRef.current)
         canvasRef.current.style.transform = `translateY(${(dp - 0.4) * 22}px)`;
 
@@ -35,10 +37,8 @@ export default function TRX16Hero({ userName }: { userName: string }) {
 
       const nextImg = dp < 0.54 ? 0 : 1;
       if (nextImg !== curImg.current) {
-        const prev = curImg.current === 0 ? img0Ref.current : img1Ref.current;
-        const next = nextImg === 0 ? img0Ref.current : img1Ref.current;
-        if (prev) prev.style.opacity = '0';
-        if (next) next.style.opacity = '1';
+        (curImg.current === 0 ? img0Ref : img1Ref).current!.style.opacity = '0';
+        (nextImg === 0 ? img0Ref : img1Ref).current!.style.opacity = '1';
         curImg.current = nextImg;
         if (labelRef.current) labelRef.current.textContent = IMGS[nextImg].label;
       }
@@ -55,57 +55,15 @@ export default function TRX16Hero({ userName }: { userName: string }) {
       }
     }
 
-    function update(delta: number) {
-      const max = DRIVER_H - H;
-      scrollY.current = Math.max(0, Math.min(scrollY.current + delta, max));
-      const dp = scrollY.current / max;
-      applyProgress(dp);
-    }
-
-    function onWheel(e: WheelEvent) {
-      const dp = scrollY.current / (DRIVER_H - H);
-      // only capture scroll when hero hasn't finished (scrolling down) or has progress (scrolling up)
-      if ((e.deltaY > 0 && dp < 1) || (e.deltaY < 0 && dp > 0)) {
-        e.preventDefault();
-        e.stopPropagation();
-        update(e.deltaY);
-      }
-    }
-
-    let touchStartY = 0;
-    function onTouchStart(e: TouchEvent) {
-      touchStartY = e.touches[0].clientY;
-    }
-    function onTouchMove(e: TouchEvent) {
-      const delta = touchStartY - e.touches[0].clientY;
-      touchStartY = e.touches[0].clientY;
-      const dp = scrollY.current / (DRIVER_H - H);
-      if ((delta > 0 && dp < 1) || (delta < 0 && dp > 0)) {
-        e.preventDefault();
-        update(delta * 2.5);
-      }
-    }
-
-    wrap.addEventListener('wheel', onWheel, { passive: false });
-    wrap.addEventListener('touchstart', onTouchStart, { passive: true });
-    wrap.addEventListener('touchmove', onTouchMove, { passive: false });
-    applyProgress(0);
-
-    return () => {
-      wrap.removeEventListener('wheel', onWheel);
-      wrap.removeEventListener('touchstart', onTouchStart);
-      wrap.removeEventListener('touchmove', onTouchMove);
-    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener('scroll', onScroll);
   }, []);
-
-  const absStretch: React.CSSProperties = {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    pointerEvents: 'none',
-  };
 
   return (
     <>
       <style>{`
+        .trx-scroll::-webkit-scrollbar { display: none; }
         @keyframes trx-bob {
           0%,100%{opacity:.2;transform:translateY(0)}
           50%{opacity:.65;transform:translateY(-6px)}
@@ -113,20 +71,27 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         .trx-bob{animation:trx-bob 2.2s ease infinite}
       `}</style>
 
-      <div ref={wrapRef} style={{ position: 'relative', width: '100%', height: H, overflow: 'hidden', cursor: 'ns-resize' }}>
+      {/* outer wrapper — relative, fixed height, clips nothing on x */}
+      <div style={{ position: 'relative', width: '100%', height: H }}>
 
-        {/* ── device — centered ── */}
-        <div style={{ ...absStretch, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+        {/* scroll container — captures scroll, only driver div inside */}
+        <div ref={scrollRef} className="trx-scroll"
+          style={{ position: 'absolute', inset: 0, overflowY: 'scroll', scrollbarWidth: 'none', zIndex: 0 }}>
+          <div style={{ height: DRIVER_H }} />
+        </div>
+
+        {/* ── device — centered, above scroll container ── */}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 1 }}>
           <div ref={canvasRef} style={{ position: 'relative', width: 'min(38%,260px)', aspectRatio: '1', willChange: 'transform', transition: 'transform 0.08s linear' }}>
             <img ref={img0Ref} src={IMGS[0].src} alt="Frente" draggable={false}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: 'contain', opacity: 1, transition: 'opacity .5s ease',
-                transform: 'rotate(0deg)', userSelect: 'none', pointerEvents: 'none',
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain',
+                opacity: 1, transition: 'opacity .5s ease', transform: 'rotate(0deg)',
+                userSelect: 'none', pointerEvents: 'none',
                 filter: 'drop-shadow(0 28px 56px rgba(0,0,0,.85)) drop-shadow(0 0 40px rgba(33,200,212,.09))' }} />
             <img ref={img1Ref} src={IMGS[1].src} alt="Traseira" draggable={false}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: 'contain', opacity: 0, transition: 'opacity .5s ease',
-                transform: 'rotate(180deg)', userSelect: 'none', pointerEvents: 'none',
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain',
+                opacity: 0, transition: 'opacity .5s ease', transform: 'rotate(180deg)',
+                userSelect: 'none', pointerEvents: 'none',
                 filter: 'drop-shadow(0 28px 56px rgba(0,0,0,.85)) drop-shadow(0 0 40px rgba(33,200,212,.09))' }} />
             <div style={{ position: 'absolute', bottom: '-8%', left: '50%', transform: 'translateX(-50%)', width: '90%', height: '32%', background: 'radial-gradient(ellipse,rgba(33,200,212,.13) 0%,transparent 70%)' }} />
             <div style={{ position: 'absolute', bottom: '-4%', left: '50%', transform: 'translateX(-50%)', width: '60%', height: 14, background: 'radial-gradient(ellipse,rgba(0,0,0,.65) 0%,transparent 70%)', filter: 'blur(8px)' }} />
@@ -145,8 +110,8 @@ export default function TRX16Hero({ userName }: { userName: string }) {
           <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)' }}>Painel de controle — Device Intranet Arqia</p>
         </div>
 
-        {/* ── intro — center, fades on scroll ── */}
-        <div ref={introRef} style={{ ...absStretch, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 60, textAlign: 'center', zIndex: 2, transition: 'opacity .1s linear' }}>
+        {/* ── intro text — bottom-center, fades on scroll ── */}
+        <div ref={introRef} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 56, textAlign: 'center', pointerEvents: 'none', zIndex: 2 }}>
           <div style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 10, opacity: 0.8 }}>Device Intranet · Arqia</div>
           <div style={{ fontSize: 'clamp(40px,5vw,64px)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 10,
             background: 'linear-gradient(135deg,#fff 30%,#b8e8f0 65%,#21C8D4 100%)',
@@ -162,8 +127,8 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         </div>
 
         {/* ── card 1 — left ── */}
-        <div style={{ ...absStretch, display: 'flex', alignItems: 'center', paddingLeft: '5vw', zIndex: 3 }}>
-          <div ref={card1Ref} style={{ maxWidth: 260, opacity: 0, transform: 'translateY(36px)', transition: 'opacity .7s ease, transform .7s ease', pointerEvents: 'auto' }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: '5vw', pointerEvents: 'none', zIndex: 3 }}>
+          <div ref={card1Ref} style={{ maxWidth: 260, opacity: 0, transform: 'translateY(36px)', transition: 'opacity .7s ease, transform .7s ease' }}>
             <CardContent tag="Conectividade & Rastreamento"
               title={<>Sempre<br /><em style={{ fontStyle: 'normal', color: accent }}>online.</em></>}
               body="Rede 2G e 4G com envio de posição por ângulo, geofence embarcado e atualizações remotas via OTA."
@@ -173,8 +138,8 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         </div>
 
         {/* ── card 2 — right ── */}
-        <div style={{ ...absStretch, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '5vw', zIndex: 3 }}>
-          <div ref={card2Ref} style={{ maxWidth: 260, opacity: 0, transform: 'translateY(36px)', transition: 'opacity .7s ease, transform .7s ease', pointerEvents: 'auto' }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '5vw', pointerEvents: 'none', zIndex: 3 }}>
+          <div ref={card2Ref} style={{ maxWidth: 260, opacity: 0, transform: 'translateY(36px)', transition: 'opacity .7s ease, transform .7s ease' }}>
             <CardContent tag="Hardware"
               title={<>Robusto.<br /><em style={{ fontStyle: 'normal', color: accent }}>Inteligente.</em></>}
               body="Acelerômetro integrado, detector de Jammer e bateria interna para continuidade total dos dados."
@@ -210,7 +175,9 @@ function CardContent({ tag, title, body, rows, accent }: {
             <tr key={k} style={{ borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,.05)' : 'none' }}>
               <td style={{ padding: '8px 0', fontSize: 11, color: '#6a7d90', width: '55%' }}>{k}</td>
               <td style={{ padding: '8px 0', fontSize: 11, color: '#c8dde8', fontWeight: 500, textAlign: 'right' }}>
-                {badge ? <span style={{ background: 'rgba(33,200,212,.10)', color: accent, border: '1px solid rgba(33,200,212,.18)', borderRadius: 4, fontSize: 10, padding: '2px 7px', fontFamily: 'ui-monospace,monospace' }}>{v}</span> : v}
+                {badge
+                  ? <span style={{ background: 'rgba(33,200,212,.10)', color: accent, border: '1px solid rgba(33,200,212,.18)', borderRadius: 4, fontSize: 10, padding: '2px 7px', fontFamily: 'ui-monospace,monospace' }}>{v}</span>
+                  : v}
               </td>
             </tr>
           ))}
