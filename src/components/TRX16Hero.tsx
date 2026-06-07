@@ -138,21 +138,15 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, height: '100%',
           display: 'flex', flexDirection: 'column',
-          justifyContent: 'flex-end', padding: '0 0 32px 32px',
+          justifyContent: 'flex-start', padding: '28px 0 0 32px',
           pointerEvents: 'none', zIndex: 4,
         }}>
           <Greeting userName={userName} />
         </div>
 
-        {/* ── progress bar ── */}
-        <div ref={pbarRef} style={{
-          position: 'absolute', top: 0, left: 0, right: 0,
-          height: 2, background: 'rgba(255,255,255,.04)', zIndex: 50,
-        }}>
-          <div ref={pfillRef} style={{
-            height: '100%', width: '0%',
-            background: accent,
-          }} />
+        {/* progress bar oculta — mantém refs sem renderizar */}
+        <div ref={pbarRef} style={{ display: 'none' }}>
+          <div ref={pfillRef} />
         </div>
 
         {/* ── device canvas ── */}
