@@ -118,11 +118,8 @@ export default function App() {
           <div className="min-h-screen">
             <nav className="flex justify-between items-center px-5 py-2 text-white text-sm relative z-20" style={{ background:'linear-gradient(90deg,#0A1B2E 0%,#0D2940 100%)', borderBottom:'1px solid rgba(0,174,239,0.15)' }}>
               <div className="flex items-center gap-6">
-                <button onClick={() => setActiveView('dashboard')} className="flex-shrink-0 flex items-center gap-1.5">
-                  <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #00AEEF, #00D1C1)' }}>
-                    <span className="text-[#0A1128] font-black text-xs tracking-tight">AQ</span>
-                  </div>
-                  <span className="text-sm font-bold tracking-widest" style={{ color: '#00D1C1' }}>ARQIA</span>
+                <button onClick={() => setActiveView('dashboard')} className="flex-shrink-0">
+                  <img src="/logo.png" alt="Arqia" className="h-8 w-auto object-contain" />
                 </button>
                 <div className="h-5 w-px bg-white/10" />
                 <div className="relative">
