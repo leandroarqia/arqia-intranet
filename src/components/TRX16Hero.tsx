@@ -5,7 +5,7 @@ const IMGS = [
   { src: '/trx16_1.png', label: 'Traseira', rot: 180 },
 ];
 
-const DRIVER_H = 1600;
+const DRIVER_H = 2800;
 
 export default function TRX16Hero({ userName }: { userName: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -123,8 +123,8 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         style={{
           position: 'relative',
           width: '100%',
-          height: '48vh',
-          minHeight: 420,
+          height: '72vh',
+          minHeight: 500,
           overflowY: 'scroll',
           overflowX: 'visible',
           scrollbarWidth: 'none',
