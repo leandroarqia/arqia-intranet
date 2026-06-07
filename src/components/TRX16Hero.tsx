@@ -190,11 +190,6 @@ export default function TRX16Hero({ userName }: { userName: string }) {
           textAlign: 'center', pointerEvents: 'none', zIndex: 2,
           willChange: 'opacity',
         }}>
-          <img
-            src="/logo.png"
-            alt="Arqia"
-            style={{ height: 32, objectFit: 'contain', marginBottom: 20, opacity: 0.7 }}
-          />
           <div style={{
             fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase',
             color: accent, marginBottom: 16, opacity: 0.8,
