@@ -201,11 +201,12 @@ export default function TRX16Hero({ userName }: { userName: string }) {
             Device Intranet · Arqia
           </div>
           <div style={{
-            fontSize: 'clamp(36px,4vw,56px)', fontWeight: 900,
+            fontSize: 'clamp(32px,3.5vw,48px)', fontWeight: 900,
             letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 14,
             background: 'linear-gradient(135deg,#fff 30%,#b8e8f0 65%,#21C8D4 100%)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
+            maxWidth: '100%', overflow: 'hidden',
           }}>
             TRX-16
           </div>
