@@ -128,9 +128,7 @@ export default function TRX16Hero({ userName }: { userName: string }) {
           overflowY: 'scroll',
           overflowX: 'visible',
           scrollbarWidth: 'none',
-          borderRadius: 16,
-          border: '1px solid rgba(255,255,255,0.06)',
-          background: 'rgba(8,14,36,0.4)',
+          background: 'transparent',
         }}
       >
         {/* driver */}
