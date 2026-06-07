@@ -65,7 +65,7 @@ export default function App() {
     Papa.parse(e.target.files[0], { header: true, skipEmptyLines: true, complete: (results: any) => { setCsvBuffer(results.data); setImportStatus(''); } });
   };
 
-  const downloadTemplate = () => { const blob = new Blob(['iccid,imei,cliente,cotacao,simcard\n'], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'modelo_dispositivos.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
+  const downloadTemplate = () => { const blob = new Blob(['iccid,imei,cliente,cotacao,simcard,codigo_cliente\n'], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'modelo_dispositivos.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
 
   const exportToExcel = () => { if (!clients.length) return; const ws = XLSX.utils.json_to_sheet(clients); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dispositivos'); XLSX.writeFile(wb, 'dispositivos.xlsx'); };
 
@@ -180,15 +180,15 @@ export default function App() {
                         <button onClick={exportToExcel} disabled={!clients.length} className="bg-[#00D1C1] text-[#0A1128] px-4 py-2 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-40">Exportar Excel</button>
                       </div>
                       {clients.length === 0 ? (<p className="text-white/40 text-sm py-8 text-center">Nenhum dispositivo. Acesse <strong className="text-white/60">Importar Dispositivos</strong>.</p>) : (
-                        <div className="overflow-x-auto"><table className="w-full text-left border-collapse"><thead><tr className="border-b border-white/20 text-gray-400 text-xs uppercase tracking-wider"><th className="py-3 px-2">ICCID</th><th className="py-3 px-2">IMEI</th><th className="py-3 px-2">Cliente</th><th className="py-3 px-2">Cotação</th><th className="py-3 px-2">SIM Card</th></tr></thead>
-                        <tbody className="text-sm">{clients.filter(c => (c.cliente?.toLowerCase()||'').includes(searchQuery.toLowerCase()) || (c.iccid||'').includes(searchQuery) || (c.imei||'').includes(searchQuery) || (c.cotacao?.toLowerCase()||'').includes(searchQuery.toLowerCase())).map((c,i) => (<tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors"><td className="py-3 px-2 font-mono text-[#00AEEF] text-xs">{c.iccid}</td><td className="py-3 px-2 font-mono text-xs">{c.imei}</td><td className="py-3 px-2">{c.cliente}</td><td className="py-3 px-2 text-white/60">{c.cotacao}</td><td className="py-3 px-2"><span className="px-2 py-0.5 bg-[#00AEEF]/10 text-[#00AEEF] rounded text-xs">{c.simcard}</span></td></tr>))}</tbody></table></div>
+                        <div className="overflow-x-auto"><table className="w-full text-left border-collapse"><thead><tr className="border-b border-white/20 text-gray-400 text-xs uppercase tracking-wider"><th className="py-3 px-2">ICCID</th><th className="py-3 px-2">IMEI</th><th className="py-3 px-2">Cliente</th><th className="py-3 px-2">Cotação</th><th className="py-3 px-2">SIM Card</th><th className="py-3 px-2">Cód. Cliente</th></tr></thead>
+                        <tbody className="text-sm">{clients.filter(c => (c.cliente?.toLowerCase()||'').includes(searchQuery.toLowerCase()) || (c.iccid||'').includes(searchQuery) || (c.imei||'').includes(searchQuery) || (c.cotacao?.toLowerCase()||'').includes(searchQuery.toLowerCase())).map((c,i) => (<tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors"><td className="py-3 px-2 font-mono text-[#00AEEF] text-xs">{c.iccid}</td><td className="py-3 px-2 font-mono text-xs">{c.imei}</td><td className="py-3 px-2">{c.cliente}</td><td className="py-3 px-2 text-white/60">{c.cotacao}</td><td className="py-3 px-2"><span className="px-2 py-0.5 bg-[#00AEEF]/10 text-[#00AEEF] rounded text-xs">{c.simcard}</span></td><td className="py-3 px-2 text-white/60">{c.codigo_cliente || '—'}</td></tr>))}</tbody></table></div>
                       )}
                     </motion.div>
                   )}
                   {activeView === 'importar' && (
                     <motion.div variants={itemVariants} className="bg-[#0C1635]/80 p-6 rounded-2xl border border-white/10">
                       <div className="mb-6 p-4 bg-[#080E24] rounded-lg border border-white/5 flex items-center justify-between">
-                        <p className="text-sm text-white/50">Formato: <code className="text-[#00D1C1]">iccid, imei, cliente, cotacao, simcard</code></p>
+                        <p className="text-sm text-white/50">Formato: <code className="text-[#00D1C1]">iccid, imei, cliente, cotacao, simcard, codigo_cliente</code></p>
                         <button onClick={downloadTemplate} className="text-xs text-[#00AEEF] hover:underline ml-4">Baixar modelo CSV</button>
                       </div>
                       <input type="file" accept=".csv" onChange={handleFileUpload} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#00AEEF] file:text-[#0A1128] hover:file:bg-[#00D1C1] mb-4 cursor-pointer" />
