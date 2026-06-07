@@ -22,28 +22,13 @@ export default function TRX16Hero({ userName }: { userName: string }) {
   const curImg    = useRef(0);
 
   useEffect(() => {
-    // Find the nearest scrollable ancestor (the main content panel)
-    function getScroller(el: HTMLElement | null): HTMLElement {
-      while (el) {
-        const { overflowY } = getComputedStyle(el);
-        if (overflowY === 'auto' || overflowY === 'scroll') return el;
-        el = el.parentElement;
-      }
-      return document.documentElement;
-    }
-
-    const outer   = outerRef.current!;
-    const scroller = getScroller(outer.parentElement);
+    const outer = outerRef.current!;
 
     function onScroll() {
-      const outerTop    = outer.getBoundingClientRect().top;
-      const scrollerTop = scroller === document.documentElement
-        ? 0
-        : scroller.getBoundingClientRect().top;
-
-      const relTop = scrollerTop - outerTop; // how far we've scrolled into outer
+      // scrolled = how many px we've scrolled past the top of outer
+      const scrolled = -outer.getBoundingClientRect().top;
       const maxTravel = SCROLL_H - HERO_H;
-      const dp = maxTravel > 0 ? Math.max(0, Math.min(relTop / maxTravel, 1)) : 0;
+      const dp = maxTravel > 0 ? Math.max(0, Math.min(scrolled / maxTravel, 1)) : 0;
 
       if (canvasRef.current)
         canvasRef.current.style.transform = `translateY(${(dp - 0.4) * 22}px)`;
@@ -71,9 +56,9 @@ export default function TRX16Hero({ userName }: { userName: string }) {
       }
     }
 
-    scroller.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
-    return () => scroller.removeEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   return (
