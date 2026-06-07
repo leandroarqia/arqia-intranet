@@ -77,22 +77,20 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         .trx-bob{animation:trx-bob 2.2s ease infinite}
       `}</style>
 
-      {/* saudação — fluxo normal, sobe com scroll da página */}
-      <div style={{ padding: '28px 28px 0' }}>
-        <h2 style={{ fontSize: 'clamp(18px,2vw,26px)', fontWeight: 700, lineHeight: 1.2, marginBottom: 4, color: '#fff' }}>
-          {(() => {
-            const h = new Date().getHours();
-            const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
-            return <>{s}, <span style={{ color: '#00D1C1' }}>{userName}</span>!</>;
-          })()}
-        </h2>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)' }}>
-          Painel de controle — Device Intranet Arqia
-        </p>
-      </div>
-
       {/* hero — altura fixa, captura wheel para animação */}
       <div ref={heroRef} style={{ position: 'relative', width: '100%', height: HERO_H, overflow: 'hidden' }}>
+
+        {/* saudação — fixa no canto superior esquerdo */}
+        <div style={{ position: 'absolute', top: 24, left: 28, zIndex: 10, pointerEvents: 'none' }}>
+          <h2 style={{ fontSize: 'clamp(18px,2vw,26px)', fontWeight: 700, lineHeight: 1.2, marginBottom: 4, color: '#fff' }}>
+            {(() => {
+              const h = new Date().getHours();
+              const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+              return <>{s}, <span style={{ color: '#00D1C1' }}>{userName}</span>!</>;
+            })()}
+          </h2>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)' }}>Painel de controle — Device Intranet Arqia</p>
+        </div>
 
         {/* device — centro */}
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 1 }}>
@@ -113,7 +111,7 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         </div>
 
         {/* intro */}
-        <div ref={introRef} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 48, textAlign: 'center', pointerEvents: 'none', zIndex: 2 }}>
+        <div ref={introRef} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 60, textAlign: 'center', pointerEvents: 'none', zIndex: 2 }}>
           <div style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 10, opacity: 0.8 }}>Device Intranet · Arqia</div>
           <div style={{ fontSize: 'clamp(40px,5vw,64px)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 10,
             background: 'linear-gradient(135deg,#fff 30%,#b8e8f0 65%,#21C8D4 100%)',
