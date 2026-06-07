@@ -161,16 +161,94 @@ export default function App() {
                 <motion.div key={activeView} variants={containerVariants} initial="hidden" animate="visible" exit="hidden">
                   {activeView !== 'dashboard' && (<motion.div variants={itemVariants} className="mb-6"><h2 className="text-2xl font-bold tracking-tight">{activeView === 'clientes' && 'Controle de Clientes'}{activeView === 'importar' && 'Importar Dispositivos'}{activeView === 'base-cliente' && 'Base do Cliente'}</h2></motion.div>)}
                   {activeView === 'dashboard' && (
-                    <motion.div variants={itemVariants}>
-                      <h2 className="text-3xl font-bold mb-2">{(() => { const h = new Date().getHours(); const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; return <>{s}, <span className="text-[#00D1C1]">{user.name}</span>!</>; })()}</h2>
-                      <p className="text-white/50 text-sm mb-6">Painel de controle — Device Intranet Arqia</p>
+                    <motion.div variants={itemVariants} className="space-y-6">
+
+                      {/* Saudação */}
+                      <div>
+                        <h2 className="text-3xl font-bold mb-1">{(() => { const h = new Date().getHours(); const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; return <>{s}, <span className="text-[#00D1C1]">{user.name}</span>!</>; })()}</h2>
+                        <p className="text-white/40 text-sm">Painel de controle — Device Intranet Arqia</p>
+                      </div>
+
+                      {/* Aviso banco */}
                       {isUserAdmin && !hasSupabase && (
-                        <div className="mb-6 p-4 bg-yellow-900/20 border border-yellow-700/40 rounded-xl">
-                          <p className="text-yellow-300 font-semibold text-sm mb-1">⚠️ Banco de dados não configurado</p>
-                          <p className="text-yellow-200/70 text-xs">Os dados estão salvos apenas no seu navegador.</p>
+                        <div className="p-4 bg-yellow-900/20 border border-yellow-700/40 rounded-xl flex items-start gap-3">
+                          <Shield size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
+                          <div><p className="text-yellow-300 font-semibold text-sm">Banco de dados não configurado</p><p className="text-yellow-200/60 text-xs mt-0.5">Os dados estão salvos apenas no seu navegador.</p></div>
                         </div>
                       )}
-                      <TRX16Hero userName={user.name} />
+
+                      {/* KPI Cards */}
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                          { icon: Package,   label: 'Dispositivos',       value: clients.length,                                              color: '#00AEEF' },
+                          { icon: BarChart3, label: 'Bases Ativas',        value: bases.filter((b:any) => b.status !== 'Inadimplente').length, color: '#00D1C1' },
+                          { icon: Shield,    label: 'Inadimplentes',       value: bases.filter((b:any) => b.status === 'Inadimplente').length, color: bases.some((b:any) => b.status === 'Inadimplente') ? '#f59e0b' : '#00D1C1' },
+                          { icon: User,      label: 'Clientes Únicos',     value: new Set(clients.map((c:any) => c.cliente).filter(Boolean)).size, color: '#00AEEF' },
+                        ].map(({ icon: Icon, label, value, color }) => (
+                          <div key={label} className="bg-[#0C1635]/60 border border-white/8 rounded-2xl p-5 flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}18` }}>
+                              <Icon size={18} style={{ color }} />
+                            </div>
+                            <div>
+                              <p className="text-2xl font-bold text-white">{value}</p>
+                              <p className="text-xs text-white/40 uppercase tracking-wider mt-0.5">{label}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Hero TRX-16 + Atalhos */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div className="lg:col-span-2">
+                          <TRX16Hero userName={user.name} />
+                        </div>
+
+                        {/* Atalhos rápidos + últimos dispositivos */}
+                        <div className="flex flex-col gap-4">
+                          {/* Quick actions */}
+                          <div className="bg-[#0C1635]/60 border border-white/8 rounded-2xl p-4">
+                            <p className="text-xs text-white/40 uppercase tracking-wider mb-3">Acesso Rápido</p>
+                            <div className="space-y-2">
+                              {[
+                                { id: 'clientes',     icon: User,      label: 'Controle de Clientes',  desc: `${clients.length} dispositivos` },
+                                { id: 'importar',     icon: Package,   label: 'Importar Dispositivos', desc: 'CSV · Excel' },
+                                { id: 'base-cliente', icon: BarChart3, label: 'Base do Cliente',        desc: `${bases.length} bases` },
+                              ].map(item => (
+                                <button key={item.id} onClick={() => setActiveView(item.id)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors text-left group">
+                                  <div className="w-8 h-8 rounded-lg bg-[#00AEEF]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#00AEEF]/20 transition-colors">
+                                    <item.icon size={14} className="text-[#00AEEF]" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-white/90">{item.label}</p>
+                                    <p className="text-xs text-white/35">{item.desc}</p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Últimos dispositivos */}
+                          <div className="bg-[#0C1635]/60 border border-white/8 rounded-2xl p-4 flex-1">
+                            <p className="text-xs text-white/40 uppercase tracking-wider mb-3">Últimos Dispositivos</p>
+                            {clients.length === 0 ? (
+                              <p className="text-white/25 text-xs text-center py-4">Nenhum dispositivo cadastrado</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {clients.slice(-5).reverse().map((c: any, i: number) => (
+                                  <div key={i} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
+                                    <div>
+                                      <p className="text-xs font-mono text-[#00AEEF] leading-none">{c.iccid?.slice(-8) || '—'}</p>
+                                      <p className="text-xs text-white/40 mt-0.5 truncate max-w-[120px]">{c.cliente || '—'}</p>
+                                    </div>
+                                    <span className="text-xs px-2 py-0.5 bg-[#00AEEF]/10 text-[#00AEEF] rounded-full">{c.simcard || '—'}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
                     </motion.div>
                   )}
                   {activeView === 'clientes' && (
