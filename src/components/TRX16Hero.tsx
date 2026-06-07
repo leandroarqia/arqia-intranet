@@ -7,74 +7,99 @@ const IMGS = [
 
 const DRIVER_H = 3000;
 const accent   = '#21C8D4';
-const H        = 520; // hero height px
+const H        = 520;
 
 export default function TRX16Hero({ userName }: { userName: string }) {
-  const containerRef  = useRef<HTMLDivElement>(null);
-  const canvasRef     = useRef<HTMLDivElement>(null);
-  const img0Ref       = useRef<HTMLImageElement>(null);
-  const img1Ref       = useRef<HTMLImageElement>(null);
-  const introRef      = useRef<HTMLDivElement>(null);
-  const card1Ref      = useRef<HTMLDivElement>(null);
-  const card2Ref      = useRef<HTMLDivElement>(null);
-  const labelRef      = useRef<HTMLSpanElement>(null);
-  const curImg        = useRef(0);
+  const wrapRef   = useRef<HTMLDivElement>(null);
+  const driverRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const img0Ref   = useRef<HTMLImageElement>(null);
+  const img1Ref   = useRef<HTMLImageElement>(null);
+  const introRef  = useRef<HTMLDivElement>(null);
+  const card1Ref  = useRef<HTMLDivElement>(null);
+  const card2Ref  = useRef<HTMLDivElement>(null);
+  const labelRef  = useRef<HTMLSpanElement>(null);
+  const curImg    = useRef(0);
+  const scrollY   = useRef(0);
 
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+    const wrap = wrapRef.current;
+    if (!wrap) return;
 
-    function show(i: number) {
-      if (i === curImg.current) return;
-      const prev = curImg.current === 0 ? img0Ref.current : img1Ref.current;
-      const next = i === 0 ? img0Ref.current : img1Ref.current;
-      if (prev) prev.style.opacity = '0';
-      if (next) next.style.opacity = '1';
-      curImg.current = i;
-      if (labelRef.current) labelRef.current.textContent = IMGS[i].label;
-    }
-
-    function onScroll() {
-      const st  = el.scrollTop;
-      const max = DRIVER_H - el.clientHeight;
-      const dp  = max > 0 ? Math.max(0, Math.min(st / max, 1)) : 0;
-
+    function applyProgress(dp: number) {
       if (canvasRef.current)
         canvasRef.current.style.transform = `translateY(${(dp - 0.4) * 22}px)`;
 
       if (introRef.current)
-        introRef.current.style.opacity = String(Math.max(0, 1 - st / (el.clientHeight * 0.5)));
+        introRef.current.style.opacity = String(Math.max(0, 1 - dp / 0.35));
 
-      show(dp < 0.54 ? 0 : 1);
+      const nextImg = dp < 0.54 ? 0 : 1;
+      if (nextImg !== curImg.current) {
+        const prev = curImg.current === 0 ? img0Ref.current : img1Ref.current;
+        const next = nextImg === 0 ? img0Ref.current : img1Ref.current;
+        if (prev) prev.style.opacity = '0';
+        if (next) next.style.opacity = '1';
+        curImg.current = nextImg;
+        if (labelRef.current) labelRef.current.textContent = IMGS[nextImg].label;
+      }
 
       if (card1Ref.current) {
-        card1Ref.current.style.opacity      = dp >= 0.12 ? '1' : '0';
-        card1Ref.current.style.transform    = dp >= 0.12 ? 'translateY(0)' : 'translateY(36px)';
+        const on = dp >= 0.12;
+        card1Ref.current.style.opacity   = on ? '1' : '0';
+        card1Ref.current.style.transform = on ? 'translateY(0)' : 'translateY(36px)';
       }
       if (card2Ref.current) {
-        card2Ref.current.style.opacity      = dp >= 0.58 ? '1' : '0';
-        card2Ref.current.style.transform    = dp >= 0.58 ? 'translateY(0)' : 'translateY(36px)';
+        const on = dp >= 0.58;
+        card2Ref.current.style.opacity   = on ? '1' : '0';
+        card2Ref.current.style.transform = on ? 'translateY(0)' : 'translateY(36px)';
       }
     }
 
-    el.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => el.removeEventListener('scroll', onScroll);
+    function update(delta: number) {
+      const max = DRIVER_H - H;
+      scrollY.current = Math.max(0, Math.min(scrollY.current + delta, max));
+      const dp = scrollY.current / max;
+      applyProgress(dp);
+    }
+
+    function onWheel(e: WheelEvent) {
+      const dp = scrollY.current / (DRIVER_H - H);
+      // only capture scroll when hero hasn't finished (scrolling down) or has progress (scrolling up)
+      if ((e.deltaY > 0 && dp < 1) || (e.deltaY < 0 && dp > 0)) {
+        e.preventDefault();
+        e.stopPropagation();
+        update(e.deltaY);
+      }
+    }
+
+    let touchStartY = 0;
+    function onTouchStart(e: TouchEvent) {
+      touchStartY = e.touches[0].clientY;
+    }
+    function onTouchMove(e: TouchEvent) {
+      const delta = touchStartY - e.touches[0].clientY;
+      touchStartY = e.touches[0].clientY;
+      const dp = scrollY.current / (DRIVER_H - H);
+      if ((delta > 0 && dp < 1) || (delta < 0 && dp > 0)) {
+        e.preventDefault();
+        update(delta * 2.5);
+      }
+    }
+
+    wrap.addEventListener('wheel', onWheel, { passive: false });
+    wrap.addEventListener('touchstart', onTouchStart, { passive: true });
+    wrap.addEventListener('touchmove', onTouchMove, { passive: false });
+    applyProgress(0);
+
+    return () => {
+      wrap.removeEventListener('wheel', onWheel);
+      wrap.removeEventListener('touchstart', onTouchStart);
+      wrap.removeEventListener('touchmove', onTouchMove);
+    };
   }, []);
 
-  const wrapStyle: React.CSSProperties = {
-    position: 'relative',
-    width: '100%',
-    height: H,
-    overflow: 'hidden',
-  };
-
-  const absCenter: React.CSSProperties = {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+  const absStretch: React.CSSProperties = {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     pointerEvents: 'none',
   };
 
@@ -82,54 +107,28 @@ export default function TRX16Hero({ userName }: { userName: string }) {
     <>
       <style>{`
         @keyframes trx-bob {
-          0%,100% { opacity:.2; transform:translateY(0); }
-          50%      { opacity:.65; transform:translateY(-6px); }
+          0%,100%{opacity:.2;transform:translateY(0)}
+          50%{opacity:.65;transform:translateY(-6px)}
         }
-        .trx-bob { animation: trx-bob 2.2s ease infinite; }
+        .trx-bob{animation:trx-bob 2.2s ease infinite}
       `}</style>
 
-      <div style={wrapStyle}>
+      <div ref={wrapRef} style={{ position: 'relative', width: '100%', height: H, overflow: 'hidden', cursor: 'ns-resize' }}>
 
-        {/* scroll driver — hidden, captures scroll events */}
-        <div
-          ref={containerRef}
-          style={{
-            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-            overflowY: 'scroll', overflowX: 'hidden',
-            scrollbarWidth: 'none', zIndex: 0,
-          }}
-        >
-          <style>{`.trx-driver::-webkit-scrollbar{display:none}`}</style>
-          <div className="trx-driver" style={{ height: DRIVER_H }} />
-        </div>
-
-        {/* ── device image — centered ── */}
-        <div style={{ ...absCenter, zIndex: 1 }}>
-          <div
-            ref={canvasRef}
-            style={{
-              position: 'relative',
-              width: 'min(38%, 280px)',
-              aspectRatio: '1',
-              willChange: 'transform',
-              transition: 'transform 0.08s linear',
-            }}
-          >
+        {/* ── device — centered ── */}
+        <div style={{ ...absStretch, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+          <div ref={canvasRef} style={{ position: 'relative', width: 'min(38%,260px)', aspectRatio: '1', willChange: 'transform', transition: 'transform 0.08s linear' }}>
             <img ref={img0Ref} src={IMGS[0].src} alt="Frente" draggable={false}
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: 'contain', objectPosition: 'center', opacity: 1,
-                transition: 'opacity .5s ease', transform: 'rotate(0deg)',
-                filter: 'drop-shadow(0 28px 56px rgba(0,0,0,.85)) drop-shadow(0 0 40px rgba(33,200,212,.09))',
-                userSelect: 'none', pointerEvents: 'none' }} />
+                objectFit: 'contain', opacity: 1, transition: 'opacity .5s ease',
+                transform: 'rotate(0deg)', userSelect: 'none', pointerEvents: 'none',
+                filter: 'drop-shadow(0 28px 56px rgba(0,0,0,.85)) drop-shadow(0 0 40px rgba(33,200,212,.09))' }} />
             <img ref={img1Ref} src={IMGS[1].src} alt="Traseira" draggable={false}
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: 'contain', objectPosition: 'center', opacity: 0,
-                transition: 'opacity .5s ease', transform: 'rotate(180deg)',
-                filter: 'drop-shadow(0 28px 56px rgba(0,0,0,.85)) drop-shadow(0 0 40px rgba(33,200,212,.09))',
-                userSelect: 'none', pointerEvents: 'none' }} />
-            {/* glow */}
+                objectFit: 'contain', opacity: 0, transition: 'opacity .5s ease',
+                transform: 'rotate(180deg)', userSelect: 'none', pointerEvents: 'none',
+                filter: 'drop-shadow(0 28px 56px rgba(0,0,0,.85)) drop-shadow(0 0 40px rgba(33,200,212,.09))' }} />
             <div style={{ position: 'absolute', bottom: '-8%', left: '50%', transform: 'translateX(-50%)', width: '90%', height: '32%', background: 'radial-gradient(ellipse,rgba(33,200,212,.13) 0%,transparent 70%)' }} />
-            {/* shadow */}
             <div style={{ position: 'absolute', bottom: '-4%', left: '50%', transform: 'translateX(-50%)', width: '60%', height: 14, background: 'radial-gradient(ellipse,rgba(0,0,0,.65) 0%,transparent 70%)', filter: 'blur(8px)' }} />
           </div>
         </div>
@@ -146,28 +145,25 @@ export default function TRX16Hero({ userName }: { userName: string }) {
           <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)' }}>Painel de controle — Device Intranet Arqia</p>
         </div>
 
-        {/* ── intro text — center, fades on scroll ── */}
-        <div ref={introRef} style={{ ...absCenter, flexDirection: 'column', textAlign: 'center', zIndex: 2, transition: 'opacity .15s linear' }}>
-          {/* push down so it doesn't cover greeting */}
-          <div style={{ marginTop: 80, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 12, opacity: 0.8 }}>Device Intranet · Arqia</div>
-            <div style={{ fontSize: 'clamp(42px,5vw,66px)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 12,
-              background: 'linear-gradient(135deg,#fff 30%,#b8e8f0 65%,#21C8D4 100%)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>TRX-16</div>
-            <div style={{ width: 36, height: 3, background: accent, borderRadius: 3, margin: '0 auto 14px', opacity: 0.7 }} />
-            <div style={{ fontSize: 12, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#c8dde8', fontFamily: 'ui-monospace,monospace', marginBottom: 10, textShadow: '0 0 24px rgba(33,200,212,.45)' }}>
-              Rastreador Veicular · <strong style={{ color: accent }}>2G</strong> / <strong style={{ color: accent }}>4G CTA-1</strong>
-            </div>
-            <div className="trx-bob" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, color: 'rgba(255,255,255,.2)', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-              <span>Role para explorar</span>
-              <div style={{ width: 1, height: 40, background: `linear-gradient(to bottom,transparent,${accent},transparent)` }} />
-            </div>
+        {/* ── intro — center, fades on scroll ── */}
+        <div ref={introRef} style={{ ...absStretch, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 60, textAlign: 'center', zIndex: 2, transition: 'opacity .1s linear' }}>
+          <div style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 10, opacity: 0.8 }}>Device Intranet · Arqia</div>
+          <div style={{ fontSize: 'clamp(40px,5vw,64px)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 10,
+            background: 'linear-gradient(135deg,#fff 30%,#b8e8f0 65%,#21C8D4 100%)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>TRX-16</div>
+          <div style={{ width: 36, height: 3, background: accent, borderRadius: 3, margin: '0 auto 12px', opacity: 0.7 }} />
+          <div style={{ fontSize: 12, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#c8dde8', fontFamily: 'ui-monospace,monospace', marginBottom: 10, textShadow: '0 0 24px rgba(33,200,212,.45)' }}>
+            Rastreador Veicular · <strong style={{ color: accent }}>2G</strong> / <strong style={{ color: accent }}>4G CTA-1</strong>
+          </div>
+          <div className="trx-bob" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, color: 'rgba(255,255,255,.2)', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+            <span>Role para explorar</span>
+            <div style={{ width: 1, height: 40, background: `linear-gradient(to bottom,transparent,${accent},transparent)` }} />
           </div>
         </div>
 
         {/* ── card 1 — left ── */}
-        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, display: 'flex', alignItems: 'center', paddingLeft: '5vw', pointerEvents: 'none', zIndex: 3 }}>
-          <div ref={card1Ref} style={{ maxWidth: 280, opacity: 0, transform: 'translateY(36px)', transition: 'opacity .7s ease, transform .7s ease' }}>
+        <div style={{ ...absStretch, display: 'flex', alignItems: 'center', paddingLeft: '5vw', zIndex: 3 }}>
+          <div ref={card1Ref} style={{ maxWidth: 260, opacity: 0, transform: 'translateY(36px)', transition: 'opacity .7s ease, transform .7s ease', pointerEvents: 'auto' }}>
             <CardContent tag="Conectividade & Rastreamento"
               title={<>Sempre<br /><em style={{ fontStyle: 'normal', color: accent }}>online.</em></>}
               body="Rede 2G e 4G com envio de posição por ângulo, geofence embarcado e atualizações remotas via OTA."
@@ -177,8 +173,8 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         </div>
 
         {/* ── card 2 — right ── */}
-        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', paddingRight: '5vw', pointerEvents: 'none', zIndex: 3 }}>
-          <div ref={card2Ref} style={{ maxWidth: 280, opacity: 0, transform: 'translateY(36px)', transition: 'opacity .7s ease, transform .7s ease' }}>
+        <div style={{ ...absStretch, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '5vw', zIndex: 3 }}>
+          <div ref={card2Ref} style={{ maxWidth: 260, opacity: 0, transform: 'translateY(36px)', transition: 'opacity .7s ease, transform .7s ease', pointerEvents: 'auto' }}>
             <CardContent tag="Hardware"
               title={<>Robusto.<br /><em style={{ fontStyle: 'normal', color: accent }}>Inteligente.</em></>}
               body="Acelerômetro integrado, detector de Jammer e bateria interna para continuidade total dos dados."
@@ -187,7 +183,7 @@ export default function TRX16Hero({ userName }: { userName: string }) {
           </div>
         </div>
 
-        {/* ── view label ── */}
+        {/* ── label ── */}
         <div style={{ position: 'absolute', bottom: 10, left: 0, right: 0, textAlign: 'center', pointerEvents: 'none', zIndex: 10 }}>
           <span ref={labelRef} style={{ fontSize: 10, letterSpacing: '0.22em', color: 'rgba(255,255,255,.28)', fontWeight: 600, textTransform: 'uppercase' }}>
             {IMGS[0].label}
@@ -206,8 +202,8 @@ function CardContent({ tag, title, body, rows, accent }: {
   return (
     <>
       <div style={{ fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: accent, marginBottom: 10 }}>{tag}</div>
-      <h2 style={{ fontSize: 'clamp(24px,3vw,38px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.05, marginBottom: 12, color: '#fff' }}>{title}</h2>
-      <p style={{ fontSize: 12, lineHeight: 1.8, color: '#6a7d90', marginBottom: 18 }}>{body}</p>
+      <h2 style={{ fontSize: 'clamp(22px,2.8vw,36px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.05, marginBottom: 12, color: '#fff' }}>{title}</h2>
+      <p style={{ fontSize: 12, lineHeight: 1.8, color: '#6a7d90', marginBottom: 16 }}>{body}</p>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <tbody>
           {rows.map(([k, v, badge], i) => (
