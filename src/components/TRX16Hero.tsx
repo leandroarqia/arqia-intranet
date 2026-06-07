@@ -134,6 +134,16 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         {/* driver */}
         <div style={{ height: DRIVER_H }} />
 
+        {/* ── saudação overlay (canto superior esquerdo) ── */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: '100%',
+          display: 'flex', flexDirection: 'column',
+          justifyContent: 'flex-end', padding: '0 0 32px 32px',
+          pointerEvents: 'none', zIndex: 4,
+        }}>
+          <Greeting userName={userName} />
+        </div>
+
         {/* ── progress bar ── */}
         <div ref={pbarRef} style={{
           position: 'absolute', top: 0, left: 0, right: 0,
@@ -324,5 +334,20 @@ function CardContent({ tag, title, body, rows, accent }: {
         </tbody>
       </table>
     </>
+  );
+}
+
+function Greeting({ userName }: { userName: string }) {
+  const h = new Date().getHours();
+  const greeting = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+  return (
+    <div>
+      <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 30px)', fontWeight: 700, lineHeight: 1.2, marginBottom: 4, color: '#fff' }}>
+        {greeting}, <span style={{ color: '#00D1C1' }}>{userName}</span>!
+      </h2>
+      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.02em' }}>
+        Painel de controle — Device Intranet Arqia
+      </p>
+    </div>
   );
 }
