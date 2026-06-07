@@ -5,13 +5,12 @@ const IMGS = [
   { src: '/trx16_1.png', label: 'Traseira', rot: 180 },
 ];
 
-const accent  = '#21C8D4';
-const HERO_H  = 500;   // px — visual height
-const SCROLL_H = 2800; // px — scroll travel inside the panel
+const accent   = '#21C8D4';
+const HERO_H   = 480;   // px — altura visual do painel sticky
+const TRAVEL   = 1400;  // px — espaço de scroll para a animação
 
 export default function TRX16Hero({ userName }: { userName: string }) {
   const outerRef  = useRef<HTMLDivElement>(null);
-  const stickyRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const img0Ref   = useRef<HTMLImageElement>(null);
   const img1Ref   = useRef<HTMLImageElement>(null);
@@ -25,16 +24,15 @@ export default function TRX16Hero({ userName }: { userName: string }) {
     const outer = outerRef.current!;
 
     function onScroll() {
-      // scrolled = how many px we've scrolled past the top of outer
+      // how far we've scrolled past the TOP of the outer div
       const scrolled = -outer.getBoundingClientRect().top;
-      const maxTravel = SCROLL_H - HERO_H;
-      const dp = maxTravel > 0 ? Math.max(0, Math.min(scrolled / maxTravel, 1)) : 0;
+      const dp = Math.max(0, Math.min(scrolled / TRAVEL, 1));
 
       if (canvasRef.current)
         canvasRef.current.style.transform = `translateY(${(dp - 0.4) * 22}px)`;
 
       if (introRef.current)
-        introRef.current.style.opacity = String(Math.max(0, 1 - dp / 0.35));
+        introRef.current.style.opacity = String(Math.max(0, 1 - dp / 0.3));
 
       const nextImg = dp < 0.54 ? 0 : 1;
       if (nextImg !== curImg.current) {
@@ -45,12 +43,12 @@ export default function TRX16Hero({ userName }: { userName: string }) {
       }
 
       if (card1Ref.current) {
-        const on = dp >= 0.12;
+        const on = dp >= 0.15;
         card1Ref.current.style.opacity   = on ? '1' : '0';
         card1Ref.current.style.transform = on ? 'translateY(0)' : 'translateY(36px)';
       }
       if (card2Ref.current) {
-        const on = dp >= 0.58;
+        const on = dp >= 0.6;
         card2Ref.current.style.opacity   = on ? '1' : '0';
         card2Ref.current.style.transform = on ? 'translateY(0)' : 'translateY(36px)';
       }
@@ -71,17 +69,27 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         .trx-bob{animation:trx-bob 2.2s ease infinite}
       `}</style>
 
-      {/* tall outer div — provides scroll travel */}
-      <div ref={outerRef} style={{ height: SCROLL_H, position: 'relative' }}>
+      {/* outer div — define o espaço de scroll total */}
+      <div ref={outerRef} style={{ position: 'relative' }}>
 
-        {/* sticky visual panel — stays in view while scrolling through outer */}
-        <div ref={stickyRef} style={{
-          position: 'sticky', top: 0,
-          height: HERO_H, overflow: 'hidden',
-          width: '100%',
-        }}>
+        {/* ── saudação — fluxo normal, sobe com o scroll ── */}
+        <div style={{ padding: '28px 28px 0' }}>
+          <h2 style={{ fontSize: 'clamp(18px,2vw,26px)', fontWeight: 700, lineHeight: 1.2, marginBottom: 4, color: '#fff' }}>
+            {(() => {
+              const h = new Date().getHours();
+              const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+              return <>{s}, <span style={{ color: '#00D1C1' }}>{userName}</span>!</>;
+            })()}
+          </h2>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)', marginBottom: 0 }}>
+            Painel de controle — Device Intranet Arqia
+          </p>
+        </div>
 
-          {/* ── device — centered ── */}
+        {/* ── sticky visual — fica preso enquanto scrollamos ── */}
+        <div style={{ position: 'sticky', top: 0, height: HERO_H, overflow: 'hidden' }}>
+
+          {/* device — centralizado */}
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 1 }}>
             <div ref={canvasRef} style={{ position: 'relative', width: 'min(38%,260px)', aspectRatio: '1', willChange: 'transform', transition: 'transform 0.08s linear' }}>
               <img ref={img0Ref} src={IMGS[0].src} alt="Frente" draggable={false}
@@ -99,20 +107,8 @@ export default function TRX16Hero({ userName }: { userName: string }) {
             </div>
           </div>
 
-          {/* ── greeting — top left ── */}
-          <div style={{ position: 'absolute', top: 24, left: 28, zIndex: 10, pointerEvents: 'none' }}>
-            <h2 style={{ fontSize: 'clamp(18px,2vw,26px)', fontWeight: 700, lineHeight: 1.2, marginBottom: 4, color: '#fff' }}>
-              {(() => {
-                const h = new Date().getHours();
-                const s = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
-                return <>{s}, <span style={{ color: '#00D1C1' }}>{userName}</span>!</>;
-              })()}
-            </h2>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.32)' }}>Painel de controle — Device Intranet Arqia</p>
-          </div>
-
-          {/* ── intro text — bottom center, fades on scroll ── */}
-          <div ref={introRef} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 52, textAlign: 'center', pointerEvents: 'none', zIndex: 2 }}>
+          {/* intro — bottom center, desaparece ao rolar */}
+          <div ref={introRef} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 48, textAlign: 'center', pointerEvents: 'none', zIndex: 2 }}>
             <div style={{ fontSize: 11, letterSpacing: '0.3em', textTransform: 'uppercase', color: accent, marginBottom: 10, opacity: 0.8 }}>Device Intranet · Arqia</div>
             <div style={{ fontSize: 'clamp(40px,5vw,64px)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 10,
               background: 'linear-gradient(135deg,#fff 30%,#b8e8f0 65%,#21C8D4 100%)',
@@ -127,7 +123,7 @@ export default function TRX16Hero({ userName }: { userName: string }) {
             </div>
           </div>
 
-          {/* ── card 1 — left ── */}
+          {/* card 1 — esquerda */}
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: '5vw', pointerEvents: 'none', zIndex: 3 }}>
             <div ref={card1Ref} style={{ maxWidth: 260, opacity: 0, transform: 'translateY(36px)', transition: 'opacity .7s ease, transform .7s ease' }}>
               <CardContent tag="Conectividade & Rastreamento"
@@ -138,7 +134,7 @@ export default function TRX16Hero({ userName }: { userName: string }) {
             </div>
           </div>
 
-          {/* ── card 2 — right ── */}
+          {/* card 2 — direita */}
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '5vw', pointerEvents: 'none', zIndex: 3 }}>
             <div ref={card2Ref} style={{ maxWidth: 260, opacity: 0, transform: 'translateY(36px)', transition: 'opacity .7s ease, transform .7s ease' }}>
               <CardContent tag="Hardware"
@@ -149,7 +145,7 @@ export default function TRX16Hero({ userName }: { userName: string }) {
             </div>
           </div>
 
-          {/* ── label ── */}
+          {/* label frente/traseira */}
           <div style={{ position: 'absolute', bottom: 10, left: 0, right: 0, textAlign: 'center', pointerEvents: 'none', zIndex: 10 }}>
             <span ref={labelRef} style={{ fontSize: 10, letterSpacing: '0.22em', color: 'rgba(255,255,255,.28)', fontWeight: 600, textTransform: 'uppercase' }}>
               {IMGS[0].label}
@@ -157,6 +153,10 @@ export default function TRX16Hero({ userName }: { userName: string }) {
           </div>
 
         </div>
+
+        {/* espaço extra de scroll para a animação completar */}
+        <div style={{ height: TRAVEL }} />
+
       </div>
     </>
   );
