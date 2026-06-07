@@ -191,7 +191,7 @@ export default function TRX16Hero({ userName }: { userName: string }) {
           position: 'absolute', top: 0, left: 0, right: 0, height: '100%',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
-          textAlign: 'center', pointerEvents: 'none', zIndex: 2,
+          textAlign: 'center', pointerEvents: 'none', zIndex: 2, padding: '0 24px',
           willChange: 'opacity',
         }}>
           <div style={{
@@ -201,7 +201,7 @@ export default function TRX16Hero({ userName }: { userName: string }) {
             Device Intranet · Arqia
           </div>
           <div style={{
-            fontSize: 'clamp(44px,5.5vw,68px)', fontWeight: 900,
+            fontSize: 'clamp(36px,4vw,56px)', fontWeight: 900,
             letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 14,
             background: 'linear-gradient(135deg,#fff 30%,#b8e8f0 65%,#21C8D4 100%)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
