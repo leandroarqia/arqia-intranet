@@ -118,8 +118,9 @@ export default function App() {
           <div className="min-h-screen">
             <nav className="flex justify-between items-center px-5 py-2 text-white text-sm relative z-20" style={{ background:'linear-gradient(90deg,#0A1B2E 0%,#0D2940 100%)', borderBottom:'1px solid rgba(0,174,239,0.15)' }}>
               <div className="flex items-center gap-6">
-                <button onClick={() => setActiveView('dashboard')} className="flex-shrink-0">
-                  <img src="/logo.png" alt="Arqia" className="h-8 w-auto object-contain" />
+                <button onClick={() => setActiveView('dashboard')} className="flex-shrink-0 flex items-center gap-2">
+                  <img src="/logo.png" alt="Arqia" className="h-8 w-auto object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <span className="text-sm font-bold tracking-widest text-white/80">ARQIA</span>
                 </button>
                 <div className="h-5 w-px bg-white/10" />
                 <div className="relative">
