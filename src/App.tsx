@@ -8,8 +8,16 @@ import {
   dbLogin, dbGetDevices, dbSaveDevices, dbDeleteDevice,
   dbGetBases, dbCreateBase, dbUpdateBase, dbDeleteBase,
   dbGetUsuarios, dbCreateUsuario, dbUpdateUsuarioRole, dbDeleteUsuario,
-  hasSupabase,
+  hasSupabase, LS,
 } from './db';
+
+function validatePasswordStrength(pwd: string): string[] {
+  const errors: string[] = [];
+  if (pwd.length < 8)          errors.push('mínimo 8 caracteres');
+  if (!/[A-Za-z]/.test(pwd))   errors.push('pelo menos 1 letra');
+  if (!/[0-9]/.test(pwd))      errors.push('pelo menos 1 número');
+  return errors;
+}
 
 const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } };
 const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
@@ -66,11 +74,14 @@ export default function App() {
     try { const u = await dbLogin(email, password); setUser(u); } catch (err: any) { setLoginError(err.message); }
   };
 
-  const logout = () => { setUser(null); setEmail(''); setPassword(''); setActiveView('dashboard'); setClients([]); setBases([]); setRegisteredUsers([]); setCsvBuffer([]); setImportStatus(''); };
+  const logout = () => { LS.clear(); setUser(null); setEmail(''); setPassword(''); setActiveView('dashboard'); setClients([]); setBases([]); setRegisteredUsers([]); setCsvBuffer([]); setImportStatus(''); };
 
   const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return;
-    Papa.parse(e.target.files[0], { header: true, skipEmptyLines: true, complete: (results: any) => { setCsvBuffer(results.data); setImportStatus(''); } });
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setImportStatus('erro_tamanho'); return; }
+    if (!file.name.toLowerCase().endsWith('.csv')) { setImportStatus('erro_tipo'); return; }
+    Papa.parse(file, { header: true, skipEmptyLines: true, complete: (results: any) => { setCsvBuffer(results.data); setImportStatus(''); } });
   };
 
   const downloadTemplate = () => { const blob = new Blob(['iccid,imei,cliente,cotacao,simcard,codigo_cliente\n'], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'modelo_dispositivos.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
@@ -90,7 +101,7 @@ export default function App() {
 
   const handleSaveToDatabase = async () => {
     if (!csvBuffer.length) return; setImportLoading(true); setImportStatus('');
-    try { const { inserted, duplicates } = await dbSaveDevices(csvBuffer); if (duplicates > 0 && inserted === 0) { setImportStatus('duplicados'); } else if (duplicates > 0) { setImportStatus(`sucesso_dup:${inserted}:${duplicates}`); } else { setImportStatus(`sucesso:${inserted}`); } setClients(await dbGetDevices()); setCsvBuffer([]); } catch { setImportStatus('erro'); } finally { setImportLoading(false); }
+    try { const { inserted, duplicates, errors } = await dbSaveDevices(csvBuffer); if (errors.length) setImportStatus(`erros:${errors.length}`); else if (duplicates > 0 && inserted === 0) setImportStatus('duplicados'); else if (duplicates > 0) setImportStatus(`sucesso_dup:${inserted}:${duplicates}`); else setImportStatus(`sucesso:${inserted}`); setClients(await dbGetDevices()); setCsvBuffer([]); } catch { setImportStatus('erro'); } finally { setImportLoading(false); }
   };
 
   const dbBaseToState = (b: any) => ({ id: b.id, cnpjCpf: b.cnpj_cpf ?? b.cnpjCpf ?? '', razaoSocial: b.razao_social ?? b.razaoSocial ?? '', nomeFantasia: b.nome_fantasia ?? b.nomeFantasia ?? '', proprietario: b.proprietario ?? '', codigoCliente: b.codigo_cliente ?? b.codigoCliente ?? '', status: b.status ?? 'Ativo', plataforma: b.plataforma ?? 'N/A', ultimaAlteracao: b.ultima_alteracao ?? b.ultimaAlteracao ?? '' });
@@ -99,7 +110,7 @@ export default function App() {
 
   const handleDeleteBase = async (id: number) => { await dbDeleteBase(id); setBases(bases.filter(b => b.id !== id)); setIsBaseModalOpen(false); setEditingBase(null); };
 
-  const handleAddUser = async () => { setAddUserError(''); if (!newProfileEmail || !newProfilePassword) return; try { await dbCreateUsuario(newProfileEmail, newProfilePassword, 'Suporte'); setRegisteredUsers(await dbGetUsuarios()); setNewProfileEmail(''); setNewProfilePassword(''); } catch (err: any) { setAddUserError(err.message); } };
+  const handleAddUser = async () => { setAddUserError(''); if (!newProfileEmail || !newProfilePassword) return; const pwdErrors = validatePasswordStrength(newProfilePassword); if (pwdErrors.length) { setAddUserError('Senha fraca: ' + pwdErrors.join(', ') + '.'); return; } try { await dbCreateUsuario(newProfileEmail, newProfilePassword, 'Suporte'); setRegisteredUsers(await dbGetUsuarios()); setNewProfileEmail(''); setNewProfilePassword(''); } catch (err: any) { setAddUserError(err.message); } };
 
   const handleToggleRole = async (targetEmail: string, currentRole: Role) => { const newRole: Role = currentRole === 'ADM' ? 'Suporte' : 'ADM'; await dbUpdateUsuarioRole(targetEmail, newRole); setRegisteredUsers(await dbGetUsuarios()); };
 
@@ -268,8 +279,11 @@ export default function App() {
                       </div>
                       <input type="file" accept=".csv" onChange={handleFileUpload} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#00AEEF] file:text-[#0A1128] hover:file:bg-[#00D1C1] mb-4 cursor-pointer" />
                       {csvBuffer.length > 0 && (<p className="text-sm text-white/50 mb-4 px-4 py-2 bg-white/5 rounded-lg border border-white/10">📄 {csvBuffer.length} registro(s) prontos para salvar</p>)}
-                      {importStatus === 'duplicados' && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-yellow-900/20 text-yellow-300 border border-yellow-700/40">⚠️ Todos os registros já existem no banco.</p>)}
+                      {importStatus === 'erro_tamanho' && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-red-900/20 text-red-300 border border-red-800/40">Arquivo muito grande. Máximo 5 MB.</p>)}
+                      {importStatus === 'erro_tipo'    && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-red-900/20 text-red-300 border border-red-800/40">Apenas arquivos .csv são aceitos.</p>)}
+                      {importStatus === 'duplicados'   && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-yellow-900/20 text-yellow-300 border border-yellow-700/40">⚠️ Todos os registros já existem no banco.</p>)}
                       {importStatus.startsWith('sucesso:') && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-[#00D1C1]/10 text-[#00D1C1] border border-[#00D1C1]/20">✅ {importStatus.split(':')[1]} dispositivo(s) gravados.</p>)}
+                      {importStatus.startsWith('erros:') && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-red-900/20 text-red-300 border border-red-800/40">⚠️ {importStatus.split(':')[1]} linha(s) inválidas ignoradas (ICCID/IMEI incorreto).</p>)}
                       <button onClick={handleSaveToDatabase} disabled={!csvBuffer.length || importLoading} className="w-full py-3 px-4 bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] rounded-lg hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00AEEF]/60 focus-visible:outline-none transition font-bold disabled:opacity-40 flex items-center justify-center gap-2">
                         {importLoading && <Loader2 size={16} className="animate-spin" />}{importLoading ? 'Salvando...' : `Salvar (${csvBuffer.length} dispositivos)`}
                       </button>
