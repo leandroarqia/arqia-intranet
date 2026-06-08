@@ -42,14 +42,17 @@ export default function App() {
   const [newProfilePassword, setNewProfilePassword] = useState('');
   const [addUserError, setAddUserError] = useState('');
   const isUserAdmin = user?.role === 'ADM';
+  const [dataLoading, setDataLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
+    setDataLoading(true);
     (async () => {
       setClients(await dbGetDevices());
       const b = await dbGetBases();
       setBases(b.map(dbBaseToState));
       setRegisteredUsers(await dbGetUsuarios());
+      setDataLoading(false);
     })();
   }, [user]);
 
@@ -102,15 +105,15 @@ export default function App() {
                 {loginError && (<p className="text-red-400 text-sm mb-4 text-center bg-red-900/20 py-2 rounded-lg border border-red-800/40">{loginError}</p>)}
                 <div className="space-y-4 mb-6">
                   <div>
-                    <label className="block text-xs text-white/50 mb-1 ml-1">E-mail corporativo</label>
-                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@arqia.com.br" className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2.5 px-4 text-white placeholder-white/30 focus:border-[#00AEEF] outline-none transition-colors" required />
+                    <label htmlFor="login-email" className="block text-xs text-white/50 mb-1 ml-1">E-mail corporativo</label>
+                    <input id="login-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@arqia.com.br" className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2.5 px-4 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" required />
                   </div>
                   <div>
-                    <label className="block text-xs text-white/50 mb-1 ml-1">Senha</label>
-                    <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2.5 px-4 text-white placeholder-white/30 focus:border-[#00AEEF] outline-none transition-colors" required />
+                    <label htmlFor="login-password" className="block text-xs text-white/50 mb-1 ml-1">Senha</label>
+                    <input id="login-password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2.5 px-4 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" required />
                   </div>
                 </div>
-                <button type="submit" className="w-full py-3 px-4 bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] rounded-lg hover:opacity-90 transition font-bold tracking-wide">Entrar</button>
+                <button type="submit" className="w-full py-3 px-4 bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] rounded-lg hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00AEEF]/60 focus-visible:outline-none transition font-bold tracking-wide">Entrar</button>
               </form>
             </div>
           </motion.div>
@@ -174,10 +177,12 @@ export default function App() {
                   {activeView === 'clientes' && (
                     <motion.div variants={itemVariants} className="bg-[#0C1635]/80 p-6 rounded-2xl border border-white/10">
                       <div className="mb-4 flex gap-4">
-                        <input type="text" placeholder="Pesquisar (Nome, ICCID, IMEI ou Cotação)..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="flex-grow bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 focus:border-[#00AEEF] outline-none transition-colors" />
+                        <input type="text" placeholder="Pesquisar (Nome, ICCID, IMEI ou Cotação)..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="flex-grow bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />
                         <button onClick={exportToExcel} disabled={!clients.length} className="bg-[#00D1C1] text-[#0A1128] px-4 py-2 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-40">Exportar Excel</button>
                       </div>
-                      {clients.length === 0 ? (<p className="text-white/40 text-sm py-8 text-center">Nenhum dispositivo. Acesse <strong className="text-white/60">Importar Dispositivos</strong>.</p>) : (
+                      {dataLoading ? (
+                        <div className="space-y-2 py-4">{[...Array(5)].map((_,i) => (<div key={i} className="h-10 bg-white/5 rounded-lg animate-pulse" style={{opacity: 1 - i*0.15}} />))}</div>
+                      ) : clients.length === 0 ? (<p className="text-white/40 text-sm py-8 text-center">Nenhum dispositivo. Acesse <strong className="text-white/60">Importar Dispositivos</strong>.</p>) : (
                         <div className="overflow-x-auto"><table className="w-full text-left border-collapse"><thead><tr className="border-b border-white/20 text-gray-400 text-xs uppercase tracking-wider"><th className="py-3 px-2">ICCID</th><th className="py-3 px-2">IMEI</th><th className="py-3 px-2">Cliente</th><th className="py-3 px-2">Cotação</th><th className="py-3 px-2">SIM Card</th><th className="py-3 px-2">Cód. Cliente</th></tr></thead>
                         <tbody className="text-sm">{clients.filter(c => (c.cliente?.toLowerCase()||'').includes(searchQuery.toLowerCase()) || (c.iccid||'').includes(searchQuery) || (c.imei||'').includes(searchQuery) || (c.cotacao?.toLowerCase()||'').includes(searchQuery.toLowerCase())).map((c,i) => (<tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors"><td className="py-3 px-2 font-mono text-[#00AEEF] text-xs">{c.iccid}</td><td className="py-3 px-2 font-mono text-xs">{c.imei}</td><td className="py-3 px-2">{c.cliente}</td><td className="py-3 px-2 text-white/60">{c.cotacao}</td><td className="py-3 px-2"><span className="px-2 py-0.5 bg-[#00AEEF]/10 text-[#00AEEF] rounded text-xs">{c.simcard}</span></td><td className="py-3 px-2 text-white/60">{c.codigo_cliente || '—'}</td></tr>))}</tbody></table></div>
                       )}
@@ -193,7 +198,7 @@ export default function App() {
                       {csvBuffer.length > 0 && (<p className="text-sm text-white/50 mb-4 px-4 py-2 bg-white/5 rounded-lg border border-white/10">📄 {csvBuffer.length} registro(s) prontos para salvar</p>)}
                       {importStatus === 'duplicados' && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-yellow-900/20 text-yellow-300 border border-yellow-700/40">⚠️ Todos os registros já existem no banco.</p>)}
                       {importStatus.startsWith('sucesso:') && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-[#00D1C1]/10 text-[#00D1C1] border border-[#00D1C1]/20">✅ {importStatus.split(':')[1]} dispositivo(s) gravados.</p>)}
-                      <button onClick={handleSaveToDatabase} disabled={!csvBuffer.length || importLoading} className="w-full py-3 px-4 bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] rounded-lg hover:opacity-90 transition font-bold disabled:opacity-40 flex items-center justify-center gap-2">
+                      <button onClick={handleSaveToDatabase} disabled={!csvBuffer.length || importLoading} className="w-full py-3 px-4 bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] rounded-lg hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00AEEF]/60 focus-visible:outline-none transition font-bold disabled:opacity-40 flex items-center justify-center gap-2">
                         {importLoading && <Loader2 size={16} className="animate-spin" />}{importLoading ? 'Salvando...' : `Salvar (${csvBuffer.length} dispositivos)`}
                       </button>
                     </motion.div>
@@ -202,14 +207,14 @@ export default function App() {
                     <motion.div variants={itemVariants} className="bg-[#0C1635]/80 p-6 rounded-2xl border border-white/10">
                       <div className="flex justify-between items-center mb-6">
                         <h2 className="text-xl font-semibold">Base do Cliente</h2>
-                        {isUserAdmin && (<button onClick={() => { setEditingBase(null); setNewBase({ cnpjCpf:'', razaoSocial:'', nomeFantasia:'', proprietario:'', codigoCliente:'' }); setIsBaseModalOpen(true); }} className="bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] px-4 py-2 rounded-lg font-semibold hover:opacity-90 transition text-sm">+ Criar Nova Base</button>)}
+                        {isUserAdmin && (<button onClick={() => { setEditingBase(null); setNewBase({ cnpjCpf:'', razaoSocial:'', nomeFantasia:'', proprietario:'', codigoCliente:'' }); setIsBaseModalOpen(true); }} className="bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] px-4 py-2 rounded-lg font-semibold hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00AEEF]/60 focus-visible:outline-none transition text-sm">+ Criar Nova Base</button>)}
                       </div>
                       <AnimatePresence>
                         {isBaseModalOpen && (
                           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                             <motion.div initial={{ scale:0.9,opacity:0 }} animate={{ scale:1,opacity:1 }} exit={{ scale:0.9,opacity:0 }} className="bg-[#0C1635] p-6 rounded-2xl border border-white/10 w-full max-w-sm">
                               <div className="flex justify-between items-center mb-6"><h4 className="font-semibold text-lg">{editingBase ? 'Editar Base' : 'Nova Base'}</h4><button onClick={() => setIsBaseModalOpen(false)} className="text-gray-400 hover:text-white">✕</button></div>
-                              <div className="space-y-3 mb-6">{[{ k:'cnpjCpf', p:'CNPJ / CPF' }, { k:'razaoSocial', p:'Razão Social' }, { k:'nomeFantasia', p:'Nome Fantasia' }, { k:'proprietario', p:'Proprietário' }, { k:'codigoCliente', p:'Código do Cliente' }].map(f => (<input key={f.k} type="text" placeholder={f.p} value={(newBase as any)[f.k]} onChange={e => setNewBase({...newBase,[f.k]:e.target.value})} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 focus:border-[#00AEEF] outline-none transition-colors" />))}</div>
+                              <div className="space-y-3 mb-6">{[{ k:'cnpjCpf', p:'CNPJ / CPF' }, { k:'razaoSocial', p:'Razão Social' }, { k:'nomeFantasia', p:'Nome Fantasia' }, { k:'proprietario', p:'Proprietário' }, { k:'codigoCliente', p:'Código do Cliente' }].map(f => (<input key={f.k} type="text" placeholder={f.p} value={(newBase as any)[f.k]} onChange={e => setNewBase({...newBase,[f.k]:e.target.value})} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />))}</div>
                               <div className="flex gap-2">{editingBase && (<button onClick={() => handleDeleteBase(editingBase.id)} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold transition">Remover</button>)}<button onClick={handleSaveBase} disabled={baseLoading} className={`${editingBase?'flex-1':'w-full'} bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] py-2 rounded-lg font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 disabled:opacity-70`}>{baseLoading && <Loader2 size={14} className="animate-spin"/>}{editingBase ? 'Salvar Alterações' : 'Criar Base'}</button></div>
                             </motion.div>
                           </div>
@@ -252,7 +257,7 @@ export default function App() {
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
             <motion.div initial={{ scale:0.9,opacity:0 }} animate={{ scale:1,opacity:1 }} exit={{ scale:0.9,opacity:0 }} className="bg-[#0C1635] p-6 rounded-2xl border border-white/10 w-full max-w-sm">
               <div className="flex justify-between items-center mb-6"><h4 className="font-semibold text-lg">Gerenciar Perfis</h4><button onClick={() => { setShowProfileModal(false); setAddUserError(''); }} className="text-gray-400 hover:text-white">✕</button></div>
-              {isUserAdmin && (<div className="space-y-3 mb-6 pb-6 border-b border-white/10"><p className="text-xs text-white/40 uppercase tracking-wider">Novo usuário</p><input type="email" placeholder="E-mail" value={newProfileEmail} onChange={e => setNewProfileEmail(e.target.value)} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 focus:border-[#00AEEF] outline-none transition-colors" /><input type="password" placeholder="Senha" value={newProfilePassword} onChange={e => setNewProfilePassword(e.target.value)} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 focus:border-[#00AEEF] outline-none transition-colors" />{addUserError && (<p className="text-xs text-red-400 bg-red-900/20 px-3 py-1.5 rounded-lg border border-red-800/40">{addUserError}</p>)}<button onClick={handleAddUser} className="w-full bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] py-2 rounded-lg font-semibold hover:opacity-90 transition">Adicionar Usuário</button></div>)}
+              {isUserAdmin && (<div className="space-y-3 mb-6 pb-6 border-b border-white/10"><p className="text-xs text-white/40 uppercase tracking-wider">Novo usuário</p><input type="email" placeholder="E-mail" value={newProfileEmail} onChange={e => setNewProfileEmail(e.target.value)} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" /><input type="password" placeholder="Senha" value={newProfilePassword} onChange={e => setNewProfilePassword(e.target.value)} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />{addUserError && (<p className="text-xs text-red-400 bg-red-900/20 px-3 py-1.5 rounded-lg border border-red-800/40">{addUserError}</p>)}<button onClick={handleAddUser} className="w-full bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] py-2 rounded-lg font-semibold hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00AEEF]/60 focus-visible:outline-none transition">Adicionar Usuário</button></div>)}
               <div className="space-y-2"><p className="text-xs text-white/40 uppercase tracking-wider mb-3">Usuários Cadastrados</p>
                 {(isUserAdmin ? registeredUsers : registeredUsers.filter(u => u.email===user?.email)).map((u:any) => (
                   <motion.div key={u.email} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} className="flex items-center gap-3 bg-[#080E24] p-3 rounded-xl border border-white/5">
