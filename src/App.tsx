@@ -29,6 +29,11 @@ export default function App() {
   const [clients, setClients] = useState<any[]>([]);
   const [csvBuffer, setCsvBuffer] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterCliente, setFilterCliente] = useState('');
+  const [filterCotacao, setFilterCotacao] = useState('');
+  const [filterSimcard, setFilterSimcard] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [importStatus, setImportStatus] = useState('');
   const [importLoading, setImportLoading] = useState(false);
   const [bases, setBases] = useState<any[]>([]);
@@ -70,7 +75,18 @@ export default function App() {
 
   const downloadTemplate = () => { const blob = new Blob(['iccid,imei,cliente,cotacao,simcard,codigo_cliente\n'], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'modelo_dispositivos.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
 
-  const exportToExcel = () => { if (!clients.length) return; const ws = XLSX.utils.json_to_sheet(clients); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dispositivos'); XLSX.writeFile(wb, 'dispositivos.xlsx'); };
+  const getFilteredClients = () => clients.filter(c => {
+    const q = searchQuery.toLowerCase();
+    const matchSearch = !q || (c.cliente?.toLowerCase()||'').includes(q) || (c.iccid||'').includes(q) || (c.imei||'').includes(q) || (c.cotacao?.toLowerCase()||'').includes(q);
+    const matchCliente  = !filterCliente  || c.cliente  === filterCliente;
+    const matchCotacao  = !filterCotacao  || c.cotacao  === filterCotacao;
+    const matchSimcard  = !filterSimcard  || c.simcard  === filterSimcard;
+    return matchSearch && matchCliente && matchCotacao && matchSimcard;
+  });
+
+  const exportToExcel = () => { const data = getFilteredClients(); if (!data.length) return; const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dispositivos'); XLSX.writeFile(wb, 'dispositivos.xlsx'); };
+
+  const exportToCSV = () => { const data = getFilteredClients(); if (!data.length) return; const headers = ['iccid','imei','cliente','cotacao','simcard','codigo_cliente']; const rows = data.map(c => headers.map(h => `"${(c[h]||'').toString().replace(/"/g,'""')}"`).join(',')); const blob = new Blob([headers.join(',') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'dispositivos.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
 
   const handleSaveToDatabase = async () => {
     if (!csvBuffer.length) return; setImportLoading(true); setImportStatus('');
@@ -176,15 +192,71 @@ export default function App() {
                   )}
                   {activeView === 'clientes' && (
                     <motion.div variants={itemVariants} className="bg-[#0C1635]/80 p-6 rounded-2xl border border-white/10">
-                      <div className="mb-4 flex gap-4">
-                        <input type="text" placeholder="Pesquisar (Nome, ICCID, IMEI ou Cotação)..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="flex-grow bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />
-                        <button onClick={exportToExcel} disabled={!clients.length} className="bg-[#00D1C1] text-[#0A1128] px-4 py-2 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-40">Exportar Excel</button>
+                      {/* barra de busca + ações */}
+                      <div className="mb-3 flex gap-3">
+                        <input type="text" placeholder="Buscar por nome, ICCID, IMEI..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="flex-grow bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />
+                        <button onClick={() => setShowFilters(v => !v)} className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${showFilters || filterCliente || filterCotacao || filterSimcard ? 'border-[#00AEEF]/60 text-[#00AEEF] bg-[#00AEEF]/10' : 'border-white/10 text-white/60 hover:text-white hover:border-white/20 bg-[#080E24]'}`}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                          Filtros{(filterCliente || filterCotacao || filterSimcard) ? ` (${[filterCliente,filterCotacao,filterSimcard].filter(Boolean).length})` : ''}
+                        </button>
+                        <div className="relative">
+                          <button onClick={() => setShowExportMenu(v => !v)} disabled={!clients.length} className="flex items-center gap-2 px-4 py-2 bg-[#00D1C1] text-[#0A1128] rounded-lg font-semibold hover:opacity-90 active:scale-95 transition text-sm disabled:opacity-40">
+                            Exportar <span className="text-xs opacity-70">▼</span>
+                          </button>
+                          <AnimatePresence>
+                            {showExportMenu && (
+                              <motion.div initial={{opacity:0,y:-6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-6}} className="absolute right-0 top-11 bg-[#0C1635] border border-white/10 rounded-xl shadow-2xl p-1.5 z-30 w-44">
+                                <button onClick={() => { exportToExcel(); setShowExportMenu(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+                                  Excel (.xlsx)
+                                </button>
+                                <button onClick={() => { exportToCSV(); setShowExportMenu(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+                                  CSV (.csv)
+                                </button>
+                                <div className="border-t border-white/10 my-1"/>
+                                <p className="px-3 py-1 text-xs text-white/30">{getFilteredClients().length} registro(s)</p>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
+                      {/* painel de filtros */}
+                      <AnimatePresence>
+                        {showFilters && (
+                          <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} exit={{opacity:0,height:0}} className="overflow-hidden">
+                            <div className="mb-4 p-4 bg-[#080E24] rounded-xl border border-white/5 grid grid-cols-3 gap-3">
+                              <div>
+                                <p className="text-xs text-white/40 mb-1.5 uppercase tracking-wider">Cliente</p>
+                                <select value={filterCliente} onChange={e => setFilterCliente(e.target.value)} className="w-full bg-[#0C1635] border border-white/10 rounded-lg py-2 px-3 text-sm text-white hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors">
+                                  <option value="">Todos</option>
+                                  {[...new Set(clients.map(c => c.cliente).filter(Boolean))].sort().map(v => <option key={v} value={v}>{v}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <p className="text-xs text-white/40 mb-1.5 uppercase tracking-wider">Cotação</p>
+                                <select value={filterCotacao} onChange={e => setFilterCotacao(e.target.value)} className="w-full bg-[#0C1635] border border-white/10 rounded-lg py-2 px-3 text-sm text-white hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors">
+                                  <option value="">Todas</option>
+                                  {[...new Set(clients.map(c => c.cotacao).filter(Boolean))].sort().map(v => <option key={v} value={v}>{v}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <p className="text-xs text-white/40 mb-1.5 uppercase tracking-wider">SIM Card</p>
+                                <select value={filterSimcard} onChange={e => setFilterSimcard(e.target.value)} className="w-full bg-[#0C1635] border border-white/10 rounded-lg py-2 px-3 text-sm text-white hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors">
+                                  <option value="">Todos</option>
+                                  {[...new Set(clients.map(c => c.simcard).filter(Boolean))].sort().map(v => <option key={v} value={v}>{v}</option>)}
+                                </select>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                      {/* tabela */}
                       {dataLoading ? (
                         <div className="space-y-2 py-4">{[...Array(5)].map((_,i) => (<div key={i} className="h-10 bg-white/5 rounded-lg animate-pulse" style={{opacity: 1 - i*0.15}} />))}</div>
                       ) : clients.length === 0 ? (<p className="text-white/40 text-sm py-8 text-center">Nenhum dispositivo. Acesse <strong className="text-white/60">Importar Dispositivos</strong>.</p>) : (
                         <div className="overflow-x-auto"><table className="w-full text-left border-collapse"><thead><tr className="border-b border-white/20 text-gray-400 text-xs uppercase tracking-wider"><th className="py-3 px-2">ICCID</th><th className="py-3 px-2">IMEI</th><th className="py-3 px-2">Cliente</th><th className="py-3 px-2">Cotação</th><th className="py-3 px-2">SIM Card</th><th className="py-3 px-2">Cód. Cliente</th></tr></thead>
-                        <tbody className="text-sm">{clients.filter(c => (c.cliente?.toLowerCase()||'').includes(searchQuery.toLowerCase()) || (c.iccid||'').includes(searchQuery) || (c.imei||'').includes(searchQuery) || (c.cotacao?.toLowerCase()||'').includes(searchQuery.toLowerCase())).map((c,i) => (<tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors"><td className="py-3 px-2 font-mono text-[#00AEEF] text-xs">{c.iccid}</td><td className="py-3 px-2 font-mono text-xs">{c.imei}</td><td className="py-3 px-2">{c.cliente}</td><td className="py-3 px-2 text-white/60">{c.cotacao}</td><td className="py-3 px-2"><span className="px-2 py-0.5 bg-[#00AEEF]/10 text-[#00AEEF] rounded text-xs">{c.simcard}</span></td><td className="py-3 px-2 text-white/60">{c.codigo_cliente || '—'}</td></tr>))}</tbody></table></div>
+                        <tbody className="text-sm">{getFilteredClients().map((c,i) => (<tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors"><td className="py-3 px-2 font-mono text-[#00AEEF] text-xs">{c.iccid}</td><td className="py-3 px-2 font-mono text-xs">{c.imei}</td><td className="py-3 px-2">{c.cliente}</td><td className="py-3 px-2 text-white/60">{c.cotacao}</td><td className="py-3 px-2"><span className="px-2 py-0.5 bg-[#00AEEF]/10 text-[#00AEEF] rounded text-xs">{c.simcard}</span></td><td className="py-3 px-2 text-white/60">{c.codigo_cliente || '—'}</td></tr>))}</tbody></table></div>
                       )}
                     </motion.div>
                   )}
