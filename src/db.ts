@@ -37,17 +37,19 @@ const IMEI_RE  = /^\d{15}$/;
 
 function sanitizeStr(v: unknown, max = 255): string {
   if (typeof v !== 'string') return '';
-  return v.trim().slice(0, max).replace(/[<>"'`]/g, '');
+  // Remove HTML chars + caracteres de fórmula Excel (=, +, @, %)
+  return v.trim().slice(0, max).replace(/[<>"'`=+@%]/g, '');
 }
 
 function validateDevice(item: any): Record<string, string> {
-  const iccid = sanitizeStr(item.iccid, 22);
-  const imei  = sanitizeStr(item.imei,  15);
-  if (!ICCID_RE.test(iccid)) throw new Error(`ICCID inválido: "${iccid}"`);
-  if (imei && !IMEI_RE.test(imei)) throw new Error(`IMEI inválido: "${imei}"`);
+  // Validate ANTES de sanitize para não mascarar dados inválidos
+  const rawIccid = typeof item.iccid === 'string' ? item.iccid.trim() : '';
+  const rawImei  = typeof item.imei  === 'string' ? item.imei.trim()  : '';
+  if (!ICCID_RE.test(rawIccid)) throw new Error(`ICCID inválido: "${rawIccid}"`);
+  if (rawImei && !IMEI_RE.test(rawImei)) throw new Error(`IMEI inválido: "${rawImei}"`);
   return {
-    iccid,
-    imei,
+    iccid:          sanitizeStr(item.iccid, 22),
+    imei:           sanitizeStr(item.imei,  15),
     cliente:        sanitizeStr(item.cliente),
     cotacao:        sanitizeStr(item.cotacao),
     simcard:        sanitizeStr(item.simcard),

@@ -81,7 +81,7 @@ export default function App() {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { setImportStatus('erro_tamanho'); return; }
     if (!file.name.toLowerCase().endsWith('.csv')) { setImportStatus('erro_tipo'); return; }
-    Papa.parse(file, { header: true, skipEmptyLines: true, complete: (results: any) => { setCsvBuffer(results.data); setImportStatus(''); } });
+    Papa.parse(file, { header: true, skipEmptyLines: true, preview: 10000, complete: (results: any) => { setCsvBuffer(results.data); setImportStatus(''); } });
   };
 
   const downloadTemplate = () => { const blob = new Blob(['iccid,imei,cliente,cotacao,simcard,codigo_cliente\n'], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'modelo_dispositivos.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
@@ -97,7 +97,7 @@ export default function App() {
 
   const exportToExcel = () => { const data = getFilteredClients(); if (!data.length) return; const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dispositivos'); XLSX.writeFile(wb, 'dispositivos.xlsx'); };
 
-  const exportToCSV = () => { const data = getFilteredClients(); if (!data.length) return; const headers = ['iccid','imei','cliente','cotacao','simcard','codigo_cliente']; const rows = data.map(c => headers.map(h => `"${(c[h]||'').toString().replace(/"/g,'""')}"`).join(',')); const blob = new Blob([headers.join(',') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'dispositivos.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
+  const exportToCSV = () => { const data = getFilteredClients(); if (!data.length) return; const headers = ['iccid','imei','cliente','cotacao','simcard','codigo_cliente']; const sanitizeCell = (v: unknown) => { const s = (v||'').toString().replace(/"/g,'""'); return /^[=+@%]/.test(s) ? `'${s}` : s; }; const rows = data.map(c => headers.map(h => `"${sanitizeCell(c[h])}"`).join(',')); const blob = new Blob([headers.join(',') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'dispositivos.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
 
   const handleSaveToDatabase = async () => {
     if (!csvBuffer.length) return; setImportLoading(true); setImportStatus('');
