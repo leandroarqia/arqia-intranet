@@ -405,12 +405,8 @@ export default function App() {
                                   <div>
                                     <label className="text-xs text-white/40 mb-1 block">Plataforma</label>
                                     <select value={newBase.plataforma} onChange={e => setNewBase({...newBase, plataforma:e.target.value})} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm">
+                                      <option value="N/A">N/A</option>
                                       <option value="Movit">Movit</option>
-                                      <option value="Tracker">Tracker</option>
-                                      <option value="Onixsat">Onixsat</option>
-                                      <option value="Sascar">Sascar</option>
-                                      <option value="Autotrac">Autotrac</option>
-                                      <option value="Outra">Outra</option>
                                     </select>
                                   </div>
                                 </div>
