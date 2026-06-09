@@ -41,6 +41,16 @@ function sanitizeStr(v: unknown, max = 255): string {
   return v.trim().slice(0, max).replace(/[<>"'`=+@%]/g, '');
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function sanitizeEmail(v: unknown): string {
+  if (typeof v !== 'string') return '';
+  // Mantém @ mas remove chars perigosos; valida formato
+  const cleaned = v.trim().slice(0, 255).replace(/[<>"'`]/g, '');
+  if (!EMAIL_RE.test(cleaned)) throw new Error('E-mail inválido.');
+  return cleaned.toLowerCase();
+}
+
 function validateDevice(item: any): Record<string, string> {
   // Validate ANTES de sanitize para não mascarar dados inválidos
   const rawIccid = typeof item.iccid === 'string' ? item.iccid.trim() : '';
@@ -159,7 +169,7 @@ export async function dbGetUsuarios(): Promise<any[]> {
 }
 
 export async function dbCreateUsuario(email: string, password: string, role: string) {
-  const em = sanitizeStr(email).toLowerCase();
+  const em = sanitizeEmail(email);
   if (supabase) {
     try {
       const { error } = await supabase.from('usuarios').insert({ email: em, senha: password, nome: em.split('@')[0], role });

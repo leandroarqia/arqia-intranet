@@ -136,7 +136,7 @@ export default function App() {
 
   const handleDeleteBase = async (id: number) => { await dbDeleteBase(id); setBases(bases.filter(b => b.id !== id)); setIsBaseModalOpen(false); setEditingBase(null); };
 
-  const handleAddUser = async () => { setAddUserError(''); if (!newProfileEmail || !newProfilePassword) return; const pwdErrors = validatePasswordStrength(newProfilePassword); if (pwdErrors.length) { setAddUserError('Senha fraca: ' + pwdErrors.join(', ') + '.'); return; } try { await dbCreateUsuario(newProfileEmail, newProfilePassword, 'Suporte'); setRegisteredUsers(await dbGetUsuarios()); setNewProfileEmail(''); setNewProfilePassword(''); } catch (err: any) { setAddUserError(err.message); } };
+  const handleAddUser = async () => { setAddUserError(''); if (!newProfileEmail || !newProfilePassword) return; if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newProfileEmail.trim())) { setAddUserError('E-mail inválido.'); return; } const pwdErrors = validatePasswordStrength(newProfilePassword); if (pwdErrors.length) { setAddUserError('Senha fraca: ' + pwdErrors.join(', ') + '.'); return; } try { await dbCreateUsuario(newProfileEmail, newProfilePassword, 'Suporte'); setRegisteredUsers(await dbGetUsuarios()); setNewProfileEmail(''); setNewProfilePassword(''); } catch (err: any) { setAddUserError(err.message); } };
 
   const handleToggleRole = async (targetEmail: string, currentRole: Role) => { const newRole: Role = currentRole === 'ADM' ? 'Suporte' : 'ADM'; await dbUpdateUsuarioRole(targetEmail, newRole); setRegisteredUsers(await dbGetUsuarios()); };
 
