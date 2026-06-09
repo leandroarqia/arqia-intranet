@@ -366,7 +366,18 @@ export default function App() {
                             {selectedClient === String(base.id) && (
                               <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                                 <motion.div initial={{ scale:0.9,opacity:0 }} animate={{ scale:1,opacity:1 }} exit={{ scale:0.9,opacity:0 }} className="bg-[#0C1635] p-6 rounded-2xl border border-white/10 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
-                                  <div className="flex justify-between items-center mb-4"><h4 className="font-semibold text-lg">Dispositivos — {base.razaoSocial}</h4><button onClick={() => setSelectedClient(null)} className="text-gray-400 hover:text-white">✕</button></div>
+                                  <div className="flex justify-between items-center mb-4">
+                                    <h4 className="font-semibold text-lg">Dispositivos — {base.razaoSocial}</h4>
+                                    <div className="flex items-center gap-2">
+                                      {(() => { const rows = clients.filter(c=>(c.codigo_cliente||'')===(base.codigoCliente||'')); return rows.length > 0 && (
+                                        <>
+                                          <button onClick={() => { const ws = XLSX.utils.json_to_sheet(rows.map(c=>({'ICCID':c.iccid,'IMEI':c.imei,'Cliente':c.cliente,'Cotação':c.cotacao,'SIM Card':c.simcard,'Cód. Cliente':c.codigo_cliente}))); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Dispositivos'); XLSX.writeFile(wb,`${base.razaoSocial}.xlsx`); }} className="text-xs px-3 py-1.5 rounded-lg bg-[#00D1C1]/10 border border-[#00D1C1]/20 text-[#00D1C1] hover:bg-[#00D1C1]/20 transition-colors font-medium">Excel</button>
+                                          <button onClick={() => { const rows2 = clients.filter(c=>(c.codigo_cliente||'')===(base.codigoCliente||'')); const csv = ['ICCID,IMEI,Cliente,Cotação,SIM Card,Cód. Cliente',...rows2.map(c=>[c.iccid,c.imei,c.cliente,c.cotacao,c.simcard,c.codigo_cliente].map(v=>{ const s=String(v??''); return /[,"\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }).join(','))].join('\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=`${base.razaoSocial}.csv`; a.click(); }} className="text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-colors font-medium">CSV</button>
+                                        </>
+                                      ); })()}
+                                      <button onClick={() => setSelectedClient(null)} className="text-gray-400 hover:text-white ml-1">✕</button>
+                                    </div>
+                                  </div>
                                   {clients.filter(c=>(c.codigo_cliente||'')===(base.codigoCliente||'')).length === 0 ? (<p className="text-white/40 text-sm text-center py-6">Nenhum dispositivo encontrado.</p>) : (
                                     <table className="w-full text-left text-sm border-collapse"><thead><tr className="border-b border-white/20 text-gray-400 text-xs uppercase"><th className="py-2 px-2">ICCID</th><th className="py-2 px-2">IMEI</th><th className="py-2 px-2">Cliente</th><th className="py-2 px-2">Cotação</th><th className="py-2 px-2">SIM Card</th></tr></thead>
                                     <tbody>{clients.filter(c=>(c.codigo_cliente||'')===(base.codigoCliente||'')).map((c,i)=>(<tr key={i} className="border-b border-white/5 hover:bg-white/5"><td className="py-2 px-2 font-mono text-[#00AEEF] text-xs">{c.iccid}</td><td className="py-2 px-2 font-mono text-xs">{c.imei}</td><td className="py-2 px-2">{c.cliente}</td><td className="py-2 px-2 text-white/60">{c.cotacao}</td><td className="py-2 px-2">{c.simcard}</td></tr>))}</tbody></table>
