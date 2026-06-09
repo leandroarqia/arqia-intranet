@@ -203,7 +203,7 @@ export default function App() {
                   <AnimatePresence>
                     {isDropdownOpen && (
                       <motion.div initial={{ opacity:0,y:-8 }} animate={{ opacity:1,y:0 }} exit={{ opacity:0,y:-8 }} className="absolute top-10 left-0 bg-[#0C1635] border border-white/10 rounded-xl shadow-2xl p-2 z-30 w-64">
-                        {[{ id:'clientes', icon:User, label:'Controle de Clientes' }, { id:'importar', icon:Package, label:'Importar Dispositivos' }, { id:'base-cliente', icon:BarChart3, label:'Base do Cliente' }].map(item => (
+                        {[{ id:'clientes', icon:User, label:'Controle de Clientes' }, ...(isUserAdmin ? [{ id:'importar', icon:Package, label:'Importar Dispositivos' }] : []), { id:'base-cliente', icon:BarChart3, label:'Base do Cliente' }].map(item => (
                           <div key={item.id} onClick={() => { setActiveView(item.id); setIsDropdownOpen(false); }} className="flex items-center gap-3 p-2.5 hover:bg-white/5 rounded-lg cursor-pointer text-sm text-white/80 hover:text-white transition-colors">
                             <item.icon size={16} className="text-[#00D1C1]" />{item.label}
                           </div>
@@ -316,7 +316,7 @@ export default function App() {
                       )}
                     </motion.div>
                   )}
-                  {activeView === 'importar' && (
+                  {activeView === 'importar' && isUserAdmin && (
                     <motion.div variants={itemVariants} className="bg-[#0C1635]/80 p-6 rounded-2xl border border-white/10">
                       <div className="mb-6 p-4 bg-[#080E24] rounded-lg border border-white/5 flex items-center justify-between">
                         <p className="text-sm text-white/50">Formato: <code className="text-[#00D1C1]">iccid, imei, cliente, cotacao, simcard, codigo_cliente</code></p>
