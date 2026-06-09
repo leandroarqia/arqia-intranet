@@ -94,18 +94,10 @@ export default function App() {
     })();
   }, [user]);
 
-  function classifyLoginError(msg: string): string {
-    if (msg.includes('Muitas tentativas'))   return msg;
-    if (msg.includes('não configurado'))     return 'Sistema em manutenção. Tente novamente em instantes.';
-    if (msg.includes('network') || msg.includes('fetch') || msg.includes('Failed'))
-      return 'Sem conexão com o servidor. Verifique sua internet.';
-    return 'E-mail ou senha inválidos.';
-  }
-
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault(); setLoginError('');
     try { const u = await dbLogin(email, password); setUser(u); }
-    catch (err: any) { setLoginError(classifyLoginError(err.message)); }
+    catch (err: any) { setLoginError(err.message); }
   };
 
   const logout = () => { LS.clear(); setUser(null); setEmail(''); setPassword(''); setActiveView('dashboard'); setClients([]); setBases([]); setRegisteredUsers([]); setCsvBuffer([]); setImportStatus(''); };
@@ -163,7 +155,7 @@ export default function App() {
               <form onSubmit={handleLogin} className="w-full p-8 bg-[#0C1635]/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
                 <h1 className="text-2xl font-bold mb-1 text-center tracking-tight">Device <span className="text-[#00D1C1]">Intranet</span></h1>
                 <p className="text-center text-sm text-white/40 mb-6">Acesso exclusivo equipe Arqia</p>
-                {loginError && <Alert type={loginError.includes('conexão') || loginError.includes('manutenção') ? 'warning' : 'error'}>{loginError}</Alert>}
+                {loginError && <Alert type={loginError.includes('servidor') || loginError.includes('configurado') ? 'warning' : 'error'}>{loginError}</Alert>}
                 <div className="space-y-4 mb-6">
                   <div>
                     <label htmlFor="login-email" className="block text-xs text-white/50 mb-1 ml-1">E-mail corporativo</label>

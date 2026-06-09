@@ -71,10 +71,15 @@ export async function dbLogin(email: string, password: string): Promise<{ email:
   const em = email.trim().toLowerCase();
   checkRateLimit(em);
   if (!supabase) throw new Error('Sistema não configurado. Contate o administrador.');
-  const { data, error } = await supabase.from('usuarios').select('*').eq('email', em).eq('senha', password).single();
-  if (error || !data) throw new Error('E-mail ou senha inválidos.');
-  resetRateLimit(em);
-  return { email: data.email, name: data.nome, role: data.role };
+  try {
+    const { data, error } = await supabase.from('usuarios').select('*').eq('email', em).eq('senha', password).single();
+    if (error || !data) throw new Error('E-mail ou senha inválidos.');
+    resetRateLimit(em);
+    return { email: data.email, name: data.nome, role: data.role };
+  } catch (err: any) {
+    if (err.message === 'E-mail ou senha inválidos.') throw err;
+    throw new Error('Não foi possível conectar ao servidor. Tente novamente em instantes.');
+  }
 }
 
 // ── Devices ───────────────────────────────────────────────────────────────
