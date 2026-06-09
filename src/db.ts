@@ -94,7 +94,24 @@ export async function dbLogin(email: string, password: string): Promise<{ email:
 
 // ── Devices ───────────────────────────────────────────────────────────────
 export async function dbGetDevices(): Promise<any[]> {
-  if (supabase) { try { const { data } = await supabase.from('devices').select('*').order('criado_em', { ascending: false }); if (data) return data; } catch {} }
+  if (supabase) {
+    try {
+      const all: any[] = [];
+      const PAGE = 1000;
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from('devices').select('*')
+          .order('criado_em', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error || !data) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      if (all.length > 0) return all;
+    } catch {}
+  }
   return LS.get('arqia_devices');
 }
 
