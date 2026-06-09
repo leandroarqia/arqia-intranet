@@ -71,7 +71,11 @@ export default function App() {
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [newProfileEmail, setNewProfileEmail] = useState('');
   const [newProfilePassword, setNewProfilePassword] = useState('');
+  const [newProfileName, setNewProfileName] = useState('');
+  const [newProfileRole, setNewProfileRole] = useState<Role>('Suporte');
   const [addUserError, setAddUserError] = useState('');
+  const [addUserSuccess, setAddUserSuccess] = useState('');
+  const [deleteConfirmEmail, setDeleteConfirmEmail] = useState<string | null>(null);
   const isUserAdmin = user?.role === 'ADM';
   const [dataLoading, setDataLoading] = useState(false);
   const [dataError, setDataError] = useState('');
@@ -136,11 +140,25 @@ export default function App() {
 
   const handleDeleteBase = async (id: number) => { await dbDeleteBase(id); setBases(bases.filter(b => b.id !== id)); setIsBaseModalOpen(false); setEditingBase(null); };
 
-  const handleAddUser = async () => { setAddUserError(''); if (!newProfileEmail || !newProfilePassword) return; if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newProfileEmail.trim())) { setAddUserError('E-mail inválido.'); return; } const pwdErrors = validatePasswordStrength(newProfilePassword); if (pwdErrors.length) { setAddUserError('Senha fraca: ' + pwdErrors.join(', ') + '.'); return; } try { await dbCreateUsuario(newProfileEmail, newProfilePassword, 'Suporte'); setRegisteredUsers(await dbGetUsuarios()); setNewProfileEmail(''); setNewProfilePassword(''); } catch (err: any) { setAddUserError(err.message); } };
+  const handleAddUser = async () => {
+    setAddUserError(''); setAddUserSuccess('');
+    if (!newProfileEmail || !newProfilePassword) { setAddUserError('Preencha e-mail e senha.'); return; }
+    if (!newProfileName.trim()) { setAddUserError('Preencha o nome do usuário.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newProfileEmail.trim())) { setAddUserError('E-mail inválido.'); return; }
+    const pwdErrors = validatePasswordStrength(newProfilePassword);
+    if (pwdErrors.length) { setAddUserError('Senha fraca: ' + pwdErrors.join(', ') + '.'); return; }
+    try {
+      await dbCreateUsuario(newProfileEmail, newProfilePassword, newProfileRole, newProfileName.trim());
+      setRegisteredUsers(await dbGetUsuarios());
+      setNewProfileEmail(''); setNewProfilePassword(''); setNewProfileName(''); setNewProfileRole('Suporte');
+      setAddUserSuccess('Usuário criado com sucesso!');
+      setTimeout(() => setAddUserSuccess(''), 3000);
+    } catch (err: any) { setAddUserError(err.message); }
+  };
 
   const handleToggleRole = async (targetEmail: string, currentRole: Role) => { const newRole: Role = currentRole === 'ADM' ? 'Suporte' : 'ADM'; await dbUpdateUsuarioRole(targetEmail, newRole); setRegisteredUsers(await dbGetUsuarios()); };
 
-  const handleDeleteUser = async (targetEmail: string) => { await dbDeleteUsuario(targetEmail); setRegisteredUsers(await dbGetUsuarios()); };
+  const handleDeleteUser = async (targetEmail: string) => { await dbDeleteUsuario(targetEmail); setRegisteredUsers(await dbGetUsuarios()); setDeleteConfirmEmail(null); };
   return (
     <div className="min-h-screen bg-[#0A1128] text-white font-sans">
       <AnimatePresence mode="wait">
@@ -197,7 +215,7 @@ export default function App() {
               </div>
               <div className="relative">
                 <button onClick={() => { setIsProfileDropdownOpen(!isProfileDropdownOpen); setIsDropdownOpen(false); }} className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors">
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#00AEEF] to-[#00D1C1] flex items-center justify-center text-[#0A1128] font-bold text-xs">{user.name.charAt(0).toUpperCase()}</div>
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#00AEEF] to-[#00D1C1] flex items-center justify-center text-[#0A1128] font-bold text-xs">{(user.name || user.email).charAt(0).toUpperCase()}</div>
                   <div className="text-left"><p className="text-sm font-medium leading-none">{user.name}</p><p className="text-xs text-[#00D1C1] leading-none mt-0.5">{user.role}</p></div>
                   <span className="text-xs opacity-50 ml-1">▼</span>
                 </button>
@@ -370,22 +388,93 @@ export default function App() {
       <AnimatePresence>
         {showProfileModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ scale:0.9,opacity:0 }} animate={{ scale:1,opacity:1 }} exit={{ scale:0.9,opacity:0 }} className="bg-[#0C1635] p-6 rounded-2xl border border-white/10 w-full max-w-sm">
-              <div className="flex justify-between items-center mb-6"><h4 className="font-semibold text-lg">Gerenciar Perfis</h4><button onClick={() => { setShowProfileModal(false); setAddUserError(''); }} className="text-gray-400 hover:text-white">✕</button></div>
-              {isUserAdmin && (<div className="space-y-3 mb-6 pb-6 border-b border-white/10"><p className="text-xs text-white/40 uppercase tracking-wider">Novo usuário</p><input type="email" placeholder="E-mail" value={newProfileEmail} onChange={e => setNewProfileEmail(e.target.value)} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" /><input type="password" placeholder="Senha" value={newProfilePassword} onChange={e => setNewProfilePassword(e.target.value)} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />{addUserError && (<p className="text-xs text-red-400 bg-red-900/20 px-3 py-1.5 rounded-lg border border-red-800/40">{addUserError}</p>)}<button onClick={handleAddUser} className="w-full bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] py-2 rounded-lg font-semibold hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00AEEF]/60 focus-visible:outline-none transition">Adicionar Usuário</button></div>)}
-              <div className="space-y-2"><p className="text-xs text-white/40 uppercase tracking-wider mb-3">Usuários Cadastrados</p>
-                {(isUserAdmin ? registeredUsers : registeredUsers.filter(u => u.email===user?.email)).map((u:any) => (
-                  <motion.div key={u.email} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} className="flex items-center gap-3 bg-[#080E24] p-3 rounded-xl border border-white/5">
-                    <div className={`p-1.5 rounded-full ${u.role==='ADM'?'bg-[#00AEEF]/20':'bg-white/5'}`}>{u.role==='ADM' ? <Shield size={16} className="text-[#00AEEF]"/> : <User size={16} className="text-gray-400"/>}</div>
-                    <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{u.email}</p>{isUserAdmin ? (<button onClick={() => handleToggleRole(u.email, u.role)} className={`text-xs font-semibold uppercase tracking-wider ${u.role==='ADM'?'text-[#00AEEF]':'text-gray-500 hover:text-gray-300'} transition-colors`}>{u.role} ⇄</button>) : <p className="text-xs text-gray-500 uppercase">{u.role}</p>}</div>
-                    {isUserAdmin && u.email!==user?.email && (<button onClick={() => handleDeleteUser(u.email)} className="text-gray-500 hover:text-red-400 transition-colors">✕</button>)}
-                  </motion.div>
-                ))}
+            <motion.div initial={{ scale:0.9,opacity:0 }} animate={{ scale:1,opacity:1 }} exit={{ scale:0.9,opacity:0 }}
+              className="bg-[#0C1635] rounded-2xl border border-white/10 w-full max-w-lg flex flex-col max-h-[90vh]">
+
+              {/* header */}
+              <div className="flex justify-between items-center px-6 py-4 border-b border-white/10 flex-shrink-0">
+                <div>
+                  <h4 className="font-semibold text-lg">Gerenciar Perfis</h4>
+                  <p className="text-xs text-white/40 mt-0.5">{registeredUsers.length} usuário{registeredUsers.length !== 1 ? 's' : ''} cadastrado{registeredUsers.length !== 1 ? 's' : ''}</p>
+                </div>
+                <button onClick={() => { setShowProfileModal(false); setAddUserError(''); setAddUserSuccess(''); setDeleteConfirmEmail(null); }} className="text-gray-400 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5">✕</button>
+              </div>
+
+              <div className="overflow-y-auto flex-1 p-6 space-y-6">
+
+                {/* novo usuário — só ADM */}
+                {isUserAdmin && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-white/40 uppercase tracking-wider font-semibold">Novo Usuário</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="text" placeholder="Nome completo" value={newProfileName} onChange={e => setNewProfileName(e.target.value)}
+                        className="col-span-2 bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />
+                      <input type="email" placeholder="E-mail" value={newProfileEmail} onChange={e => setNewProfileEmail(e.target.value)}
+                        className="col-span-2 bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />
+                      <input type="password" placeholder="Senha" value={newProfilePassword} onChange={e => setNewProfilePassword(e.target.value)}
+                        className="bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />
+                      <select value={newProfileRole} onChange={e => setNewProfileRole(e.target.value as Role)}
+                        className="bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm">
+                        <option value="Suporte">Suporte</option>
+                        <option value="ADM">ADM</option>
+                      </select>
+                    </div>
+                    {addUserError && <p className="text-xs text-red-400 bg-red-900/20 px-3 py-2 rounded-lg border border-red-800/40">{addUserError}</p>}
+                    {addUserSuccess && <p className="text-xs text-[#00D1C1] bg-[#00D1C1]/10 px-3 py-2 rounded-lg border border-[#00D1C1]/20">{addUserSuccess}</p>}
+                    <button onClick={handleAddUser}
+                      className="w-full bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] py-2 rounded-lg font-semibold hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00AEEF]/60 focus-visible:outline-none transition text-sm">
+                      Adicionar Usuário
+                    </button>
+                  </div>
+                )}
+
+                {/* lista de usuários */}
+                <div className="space-y-2">
+                  <p className="text-xs text-white/40 uppercase tracking-wider font-semibold">Usuários Cadastrados</p>
+                  {(isUserAdmin ? registeredUsers : registeredUsers.filter(u => u.email === user?.email)).map((u: any) => (
+                    <motion.div key={u.email} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}
+                      className="flex items-center gap-3 bg-[#080E24] px-4 py-3 rounded-xl border border-white/5">
+                      {/* avatar */}
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${u.role === 'ADM' ? 'bg-[#00AEEF]/20 text-[#00AEEF]' : 'bg-white/5 text-gray-400'}`}>
+                        {(u.nome || u.email).charAt(0).toUpperCase()}
+                      </div>
+                      {/* info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{u.nome || u.email.split('@')[0]}</p>
+                        <p className="text-xs text-white/40 truncate">{u.email}</p>
+                      </div>
+                      {/* role badge / toggle */}
+                      {isUserAdmin ? (
+                        <button onClick={() => handleToggleRole(u.email, u.role)}
+                          title="Clique para alternar role"
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors flex-shrink-0 ${u.role === 'ADM' ? 'bg-[#00AEEF]/10 border-[#00AEEF]/30 text-[#00AEEF] hover:bg-[#00AEEF]/20' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/20'}`}>
+                          {u.role} ⇄
+                        </button>
+                      ) : (
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border flex-shrink-0 ${u.role === 'ADM' ? 'bg-[#00AEEF]/10 border-[#00AEEF]/30 text-[#00AEEF]' : 'bg-white/5 border-white/10 text-gray-400'}`}>{u.role}</span>
+                      )}
+                      {/* delete */}
+                      {isUserAdmin && u.email !== user?.email && (
+                        deleteConfirmEmail === u.email ? (
+                          <div className="flex gap-1 flex-shrink-0">
+                            <button onClick={() => handleDeleteUser(u.email)} className="text-xs bg-red-900/40 hover:bg-red-900/70 text-red-400 px-2 py-1 rounded-lg border border-red-800/40 transition-colors">Confirmar</button>
+                            <button onClick={() => setDeleteConfirmEmail(null)} className="text-xs bg-white/5 hover:bg-white/10 text-gray-400 px-2 py-1 rounded-lg border border-white/10 transition-colors">Cancelar</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setDeleteConfirmEmail(u.email)} className="text-gray-500 hover:text-red-400 transition-colors flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-900/20">✕</button>
+                        )
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* confirmação de delete separada — já inline acima */}
     </div>
   );
 }

@@ -168,18 +168,19 @@ export async function dbGetUsuarios(): Promise<any[]> {
   return LS.get('arqia_usuarios').map(({ senha: _s, ...u }: any) => u);
 }
 
-export async function dbCreateUsuario(email: string, password: string, role: string) {
-  const em = sanitizeEmail(email);
+export async function dbCreateUsuario(email: string, password: string, role: string, nome?: string) {
+  const em   = sanitizeEmail(email);
+  const name = sanitizeStr(nome || em.split('@')[0], 80) || em.split('@')[0];
   if (supabase) {
     try {
-      const { error } = await supabase.from('usuarios').insert({ email: em, senha: password, nome: em.split('@')[0], role });
+      const { error } = await supabase.from('usuarios').insert({ email: em, senha: password, nome: name, role });
       if (error?.code === '23505') throw new Error('E-mail já cadastrado.');
       if (!error) return;
     } catch (e: any) { throw e; }
   }
   const users = LS.get('arqia_usuarios');
   if (users.some((u: any) => u.email === em)) throw new Error('E-mail já cadastrado.');
-  users.push({ id: Date.now(), email: em, senha: password, nome: em.split('@')[0], role });
+  users.push({ id: Date.now(), email: em, senha: password, nome: name, role });
   LS.set('arqia_usuarios', users);
 }
 
