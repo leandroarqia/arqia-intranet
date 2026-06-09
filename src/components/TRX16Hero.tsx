@@ -18,6 +18,7 @@ export default function TRX16Hero({ userName }: { userName: string }) {
   const card1Ref  = useRef<HTMLDivElement>(null);
   const card2Ref  = useRef<HTMLDivElement>(null);
   const labelRef  = useRef<HTMLSpanElement>(null);
+  const greetingRef = useRef<HTMLDivElement>(null);
   const curImg    = useRef(0);
   const progress  = useRef(0); // virtual scroll position 0..TRAVEL
 
@@ -25,6 +26,11 @@ export default function TRX16Hero({ userName }: { userName: string }) {
     const hero = heroRef.current!;
 
     function applyDp(dp: number) {
+      if (greetingRef.current) {
+        greetingRef.current.style.opacity = String(Math.max(0, 1 - dp / 0.25));
+        greetingRef.current.style.transform = `translateY(${dp * -20}px)`;
+      }
+
       if (canvasRef.current)
         canvasRef.current.style.transform = `translateY(${(dp - 0.4) * 22}px)`;
 
@@ -77,8 +83,8 @@ export default function TRX16Hero({ userName }: { userName: string }) {
         .trx-bob{animation:trx-bob 2.2s ease infinite}
       `}</style>
 
-      {/* saudação — fluxo normal, sobe com o scroll da página */}
-      <div style={{ padding: '28px 28px 16px' }}>
+      {/* saudação — fade+slide ao rolar o wheel no hero */}
+      <div ref={greetingRef} style={{ padding: '28px 28px 16px', transition: 'opacity 0.15s linear, transform 0.15s linear' }}>
         <h2 style={{ fontSize: 'clamp(18px,2vw,26px)', fontWeight: 700, lineHeight: 1.2, marginBottom: 4, color: '#fff' }}>
           {(() => {
             const h = new Date().getHours();
