@@ -84,7 +84,7 @@ export default function TRX16Hero({ userName }: { userName: string }) {
       `}</style>
 
       {/* saudação — fade+slide ao rolar o wheel no hero */}
-      <div ref={greetingRef} style={{ padding: '28px 28px 16px', transition: 'opacity 0.15s linear, transform 0.15s linear' }}>
+      <div ref={greetingRef} style={{ padding: '16px 24px 8px', transition: 'opacity 0.15s linear, transform 0.15s linear' }}>
         <h2 style={{ fontSize: 'clamp(18px,2vw,26px)', fontWeight: 700, lineHeight: 1.2, marginBottom: 4, color: '#fff' }}>
           {(() => {
             const h = new Date().getHours();

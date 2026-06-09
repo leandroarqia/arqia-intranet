@@ -212,14 +212,14 @@ export default function App() {
                 </AnimatePresence>
               </div>
             </nav>
-            <main className="p-6">
+            <main className={activeView === 'dashboard' ? '' : 'p-6'}>
               <AnimatePresence mode="wait">
                 <motion.div key={activeView} variants={containerVariants} initial="hidden" animate="visible" exit="hidden">
                   {activeView !== 'dashboard' && (<motion.div variants={itemVariants} className="mb-6"><h2 className="text-2xl font-bold tracking-tight">{activeView === 'clientes' && 'Controle de Clientes'}{activeView === 'importar' && 'Importar Dispositivos'}{activeView === 'base-cliente' && 'Base do Cliente'}</h2></motion.div>)}
                   {activeView === 'dashboard' && (
                     <motion.div variants={itemVariants}>
-                      {isUserAdmin && !hasSupabase && <Alert type="warning">Banco de dados não configurado — dados salvos apenas no navegador.</Alert>}
-                      {dataError && <Alert type="error">{dataError} <button onClick={() => { setDataError(''); setDataLoading(true); dbGetDevices().then(setClients).catch(() => setDataError('Falha na reconexão.')).finally(() => setDataLoading(false)); }} className="underline ml-1 hover:no-underline">Tentar novamente</button></Alert>}
+                      {isUserAdmin && !hasSupabase && <div className="px-6 pt-4"><Alert type="warning">Banco de dados não configurado — dados salvos apenas no navegador.</Alert></div>}
+                      {dataError && <div className="px-6 pt-4"><Alert type="error">{dataError} <button onClick={() => { setDataError(''); setDataLoading(true); dbGetDevices().then(setClients).catch(() => setDataError('Falha na reconexão.')).finally(() => setDataLoading(false)); }} className="underline ml-1 hover:no-underline">Tentar novamente</button></Alert></div>}
                       <TRX16Hero userName={user.name} />
                     </motion.div>
                   )}
