@@ -66,7 +66,7 @@ export default function App() {
   const [isBaseModalOpen, setIsBaseModalOpen] = useState(false);
   const [editingBase, setEditingBase] = useState<any | null>(null);
   const [baseLoading, setBaseLoading] = useState(false);
-  const [newBase, setNewBase] = useState({ cnpjCpf:'', razaoSocial:'', nomeFantasia:'', proprietario:'', codigoCliente:'', status:'Ativo', plataforma:'N/A' });
+  const [newBase, setNewBase] = useState({ cnpjCpf:'', razaoSocial:'', nomeFantasia:'', proprietario:'', codigoCliente:'', status:'Ativo', plataforma:'Movit' });
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [newProfileEmail, setNewProfileEmail] = useState('');
@@ -405,7 +405,7 @@ export default function App() {
                                   <div>
                                     <label className="text-xs text-white/40 mb-1 block">Plataforma</label>
                                     <select value={newBase.plataforma} onChange={e => setNewBase({...newBase, plataforma:e.target.value})} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm">
-                                      <option value="N/A">N/A</option>
+                                      <option value="Movit">Movit</option>
                                       <option value="Tracker">Tracker</option>
                                       <option value="Onixsat">Onixsat</option>
                                       <option value="Sascar">Sascar</option>
