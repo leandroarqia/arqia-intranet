@@ -19,6 +19,24 @@ function validatePasswordStrength(pwd: string): string[] {
   return errors;
 }
 
+// ── Componente de alerta unificado ────────────────────────────────────────
+type AlertType = 'error' | 'warning' | 'success' | 'info';
+function Alert({ type, children }: { type: AlertType; children: React.ReactNode }) {
+  const styles: Record<AlertType, string> = {
+    error:   'bg-red-900/20 border-red-800/40 text-red-300',
+    warning: 'bg-yellow-900/20 border-yellow-700/40 text-yellow-300',
+    success: 'bg-[#00D1C1]/10 border-[#00D1C1]/20 text-[#00D1C1]',
+    info:    'bg-[#00AEEF]/10 border-[#00AEEF]/20 text-[#00AEEF]',
+  };
+  const icons: Record<AlertType, string> = { error: '✕', warning: '⚠️', success: '✅', info: 'ℹ️' };
+  return (
+    <div className={`flex items-start gap-2 px-4 py-2.5 rounded-lg border text-sm mb-4 ${styles[type]}`}>
+      <span className="flex-shrink-0">{icons[type]}</span>
+      <span>{children}</span>
+    </div>
+  );
+}
+
 const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } };
 const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 
@@ -56,22 +74,38 @@ export default function App() {
   const [addUserError, setAddUserError] = useState('');
   const isUserAdmin = user?.role === 'ADM';
   const [dataLoading, setDataLoading] = useState(false);
+  const [dataError, setDataError] = useState('');
 
   useEffect(() => {
     if (!user) return;
     setDataLoading(true);
+    setDataError('');
     (async () => {
-      setClients(await dbGetDevices());
-      const b = await dbGetBases();
-      setBases(b.map(dbBaseToState));
-      setRegisteredUsers(await dbGetUsuarios());
-      setDataLoading(false);
+      try {
+        setClients(await dbGetDevices());
+        const b = await dbGetBases();
+        setBases(b.map(dbBaseToState));
+        setRegisteredUsers(await dbGetUsuarios());
+      } catch (err: any) {
+        setDataError('Erro ao carregar dados. Verifique a conexão e tente novamente.');
+      } finally {
+        setDataLoading(false);
+      }
     })();
   }, [user]);
 
+  function classifyLoginError(msg: string): string {
+    if (msg.includes('Muitas tentativas'))   return msg;
+    if (msg.includes('não configurado'))     return 'Sistema em manutenção. Tente novamente em instantes.';
+    if (msg.includes('network') || msg.includes('fetch') || msg.includes('Failed'))
+      return 'Sem conexão com o servidor. Verifique sua internet.';
+    return 'E-mail ou senha inválidos.';
+  }
+
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault(); setLoginError('');
-    try { const u = await dbLogin(email, password); setUser(u); } catch (err: any) { setLoginError(err.message); }
+    try { const u = await dbLogin(email, password); setUser(u); }
+    catch (err: any) { setLoginError(classifyLoginError(err.message)); }
   };
 
   const logout = () => { LS.clear(); setUser(null); setEmail(''); setPassword(''); setActiveView('dashboard'); setClients([]); setBases([]); setRegisteredUsers([]); setCsvBuffer([]); setImportStatus(''); };
@@ -129,7 +163,7 @@ export default function App() {
               <form onSubmit={handleLogin} className="w-full p-8 bg-[#0C1635]/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
                 <h1 className="text-2xl font-bold mb-1 text-center tracking-tight">Device <span className="text-[#00D1C1]">Intranet</span></h1>
                 <p className="text-center text-sm text-white/40 mb-6">Acesso exclusivo equipe Arqia</p>
-                {loginError && (<p className="text-red-400 text-sm mb-4 text-center bg-red-900/20 py-2 rounded-lg border border-red-800/40">{loginError}</p>)}
+                {loginError && <Alert type={loginError.includes('conexão') || loginError.includes('manutenção') ? 'warning' : 'error'}>{loginError}</Alert>}
                 <div className="space-y-4 mb-6">
                   <div>
                     <label htmlFor="login-email" className="block text-xs text-white/50 mb-1 ml-1">E-mail corporativo</label>
@@ -192,12 +226,8 @@ export default function App() {
                   {activeView !== 'dashboard' && (<motion.div variants={itemVariants} className="mb-6"><h2 className="text-2xl font-bold tracking-tight">{activeView === 'clientes' && 'Controle de Clientes'}{activeView === 'importar' && 'Importar Dispositivos'}{activeView === 'base-cliente' && 'Base do Cliente'}</h2></motion.div>)}
                   {activeView === 'dashboard' && (
                     <motion.div variants={itemVariants}>
-                      {isUserAdmin && !hasSupabase && (
-                        <div className="mb-4 p-4 bg-yellow-900/20 border border-yellow-700/40 rounded-xl flex items-start gap-3">
-                          <Shield size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
-                          <div><p className="text-yellow-300 font-semibold text-sm">Banco de dados não configurado</p><p className="text-yellow-200/60 text-xs mt-0.5">Os dados estão salvos apenas no seu navegador.</p></div>
-                        </div>
-                      )}
+                      {isUserAdmin && !hasSupabase && <Alert type="warning">Banco de dados não configurado — dados salvos apenas no navegador.</Alert>}
+                      {dataError && <Alert type="error">{dataError} <button onClick={() => { setDataError(''); setDataLoading(true); dbGetDevices().then(setClients).catch(() => setDataError('Falha na reconexão.')).finally(() => setDataLoading(false)); }} className="underline ml-1 hover:no-underline">Tentar novamente</button></Alert>}
                       <TRX16Hero userName={user.name} />
                     </motion.div>
                   )}
@@ -265,6 +295,11 @@ export default function App() {
                       {/* tabela */}
                       {dataLoading ? (
                         <div className="space-y-2 py-4">{[...Array(5)].map((_,i) => (<div key={i} className="h-10 bg-white/5 rounded-lg animate-pulse" style={{opacity: 1 - i*0.15}} />))}</div>
+                      ) : dataError ? (
+                        <div className="py-10 text-center">
+                          <p className="text-white/40 text-sm mb-3">Não foi possível carregar os dispositivos.</p>
+                          <button onClick={() => { setDataError(''); setDataLoading(true); dbGetDevices().then(setClients).catch(() => setDataError('Falha na reconexão.')).finally(() => setDataLoading(false)); }} className="text-[#00AEEF] text-sm hover:underline">Tentar novamente</button>
+                        </div>
                       ) : clients.length === 0 ? (<p className="text-white/40 text-sm py-8 text-center">Nenhum dispositivo. Acesse <strong className="text-white/60">Importar Dispositivos</strong>.</p>) : (
                         <div className="overflow-x-auto"><table className="w-full text-left border-collapse"><thead><tr className="border-b border-white/20 text-gray-400 text-xs uppercase tracking-wider"><th className="py-3 px-2">ICCID</th><th className="py-3 px-2">IMEI</th><th className="py-3 px-2">Cliente</th><th className="py-3 px-2">Cotação</th><th className="py-3 px-2">SIM Card</th><th className="py-3 px-2">Cód. Cliente</th></tr></thead>
                         <tbody className="text-sm">{getFilteredClients().map((c,i) => (<tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors"><td className="py-3 px-2 font-mono text-[#00AEEF] text-xs">{c.iccid}</td><td className="py-3 px-2 font-mono text-xs">{c.imei}</td><td className="py-3 px-2">{c.cliente}</td><td className="py-3 px-2 text-white/60">{c.cotacao}</td><td className="py-3 px-2"><span className="px-2 py-0.5 bg-[#00AEEF]/10 text-[#00AEEF] rounded text-xs">{c.simcard}</span></td><td className="py-3 px-2 text-white/60">{c.codigo_cliente || '—'}</td></tr>))}</tbody></table></div>
@@ -278,12 +313,14 @@ export default function App() {
                         <button onClick={downloadTemplate} className="text-xs text-[#00AEEF] hover:underline ml-4">Baixar modelo CSV</button>
                       </div>
                       <input type="file" accept=".csv" onChange={handleFileUpload} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#00AEEF] file:text-[#0A1128] hover:file:bg-[#00D1C1] mb-4 cursor-pointer" />
-                      {csvBuffer.length > 0 && (<p className="text-sm text-white/50 mb-4 px-4 py-2 bg-white/5 rounded-lg border border-white/10">📄 {csvBuffer.length} registro(s) prontos para salvar</p>)}
-                      {importStatus === 'erro_tamanho' && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-red-900/20 text-red-300 border border-red-800/40">Arquivo muito grande. Máximo 5 MB.</p>)}
-                      {importStatus === 'erro_tipo'    && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-red-900/20 text-red-300 border border-red-800/40">Apenas arquivos .csv são aceitos.</p>)}
-                      {importStatus === 'duplicados'   && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-yellow-900/20 text-yellow-300 border border-yellow-700/40">⚠️ Todos os registros já existem no banco.</p>)}
-                      {importStatus.startsWith('sucesso:') && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-[#00D1C1]/10 text-[#00D1C1] border border-[#00D1C1]/20">✅ {importStatus.split(':')[1]} dispositivo(s) gravados.</p>)}
-                      {importStatus.startsWith('erros:') && (<p className="text-sm mb-4 px-4 py-2 rounded-lg bg-red-900/20 text-red-300 border border-red-800/40">⚠️ {importStatus.split(':')[1]} linha(s) inválidas ignoradas (ICCID/IMEI incorreto).</p>)}
+                      {csvBuffer.length > 0 && <Alert type="info">📄 {csvBuffer.length} registro(s) prontos para salvar</Alert>}
+                      {importStatus === 'erro_tamanho'         && <Alert type="error">Arquivo muito grande. Máximo 5 MB.</Alert>}
+                      {importStatus === 'erro_tipo'            && <Alert type="error">Apenas arquivos .csv são aceitos.</Alert>}
+                      {importStatus === 'duplicados'           && <Alert type="warning">Todos os registros já existem no banco.</Alert>}
+                      {importStatus === 'erro'                 && <Alert type="error">Erro ao salvar. Verifique a conexão e tente novamente.</Alert>}
+                      {importStatus.startsWith('sucesso:')     && <Alert type="success">{importStatus.split(':')[1]} dispositivo(s) gravados com sucesso.</Alert>}
+                      {importStatus.startsWith('sucesso_dup:') && <Alert type="success">{importStatus.split(':')[1]} gravados · {importStatus.split(':')[2]} duplicados ignorados.</Alert>}
+                      {importStatus.startsWith('erros:')       && <Alert type="warning">{importStatus.split(':')[1]} linha(s) com ICCID/IMEI inválido foram ignoradas.</Alert>}
                       <button onClick={handleSaveToDatabase} disabled={!csvBuffer.length || importLoading} className="w-full py-3 px-4 bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] rounded-lg hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00AEEF]/60 focus-visible:outline-none transition font-bold disabled:opacity-40 flex items-center justify-center gap-2">
                         {importLoading && <Loader2 size={16} className="animate-spin" />}{importLoading ? 'Salvando...' : `Salvar (${csvBuffer.length} dispositivos)`}
                       </button>
