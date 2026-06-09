@@ -1,5 +1,32 @@
 # Arqia Intranet — Guia do Projeto
 
+## Setup Local (VS Code)
+```bash
+# 1. Clonar
+git clone https://github.com/leandroarqia/arqia-intranet
+cd arqia-intranet
+npm install
+
+# 2. Variáveis de ambiente
+cp .env.example .env.local
+# Preencher VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY
+
+# 3. Rodar
+npm run dev
+```
+
+### Claude Code no VS Code
+1. Instalar extensão **Claude Code** no VS Code (marketplace Anthropic)
+2. Fazer login com a mesma conta Anthropic
+3. Abrir o projeto e usar `Ctrl+Shift+C` para abrir o chat
+4. Todo o histórico de contexto e CLAUDE.md são preservados
+
+### Próximos passos — Backend
+- [ ] Configurar RLS policies no painel Supabase
+- [ ] Hash de senhas com bcrypt (Supabase Edge Function ou migrar auth para Supabase Auth nativo)
+- [ ] Rate limiting server-side (substituir o client-side atual)
+- [ ] Variável `VITE_SUPABASE_ANON_KEY` continua no bundle — considerar proxy via Edge Function para queries sensíveis
+
 ## Stack
 - React 18 + TypeScript + Vite + Tailwind CSS + Framer Motion
 - Supabase (banco de dados + auth)
