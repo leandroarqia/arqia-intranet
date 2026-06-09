@@ -66,7 +66,7 @@ export default function App() {
   const [isBaseModalOpen, setIsBaseModalOpen] = useState(false);
   const [editingBase, setEditingBase] = useState<any | null>(null);
   const [baseLoading, setBaseLoading] = useState(false);
-  const [newBase, setNewBase] = useState({ cnpjCpf:'', razaoSocial:'', nomeFantasia:'', proprietario:'', codigoCliente:'' });
+  const [newBase, setNewBase] = useState({ cnpjCpf:'', razaoSocial:'', nomeFantasia:'', proprietario:'', codigoCliente:'', status:'Ativo', plataforma:'N/A' });
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [newProfileEmail, setNewProfileEmail] = useState('');
@@ -136,9 +136,29 @@ export default function App() {
 
   const dbBaseToState = (b: any) => ({ id: b.id, cnpjCpf: b.cnpj_cpf ?? b.cnpjCpf ?? '', razaoSocial: b.razao_social ?? b.razaoSocial ?? '', nomeFantasia: b.nome_fantasia ?? b.nomeFantasia ?? '', proprietario: b.proprietario ?? '', codigoCliente: b.codigo_cliente ?? b.codigoCliente ?? '', status: b.status ?? 'Ativo', plataforma: b.plataforma ?? 'N/A', ultimaAlteracao: b.ultima_alteracao ?? b.ultimaAlteracao ?? '' });
 
-  const handleSaveBase = async () => { setBaseLoading(true); try { if (editingBase) { const updated = await dbUpdateBase(editingBase.id, { ...newBase, status: editingBase.status, plataforma: editingBase.plataforma }); setBases(bases.map(b => b.id === editingBase.id ? dbBaseToState(updated) : b)); } else { const created = await dbCreateBase(newBase); setBases([dbBaseToState(created), ...bases]); } setNewBase({ cnpjCpf:'', razaoSocial:'', nomeFantasia:'', proprietario:'', codigoCliente:'' }); setIsBaseModalOpen(false); setEditingBase(null); } catch (err: any) { alert('Erro ao salvar base: ' + err.message); } finally { setBaseLoading(false); } };
+  const [baseError, setBaseError] = useState('');
+  const [deleteBaseConfirm, setDeleteBaseConfirm] = useState(false);
 
-  const handleDeleteBase = async (id: number) => { await dbDeleteBase(id); setBases(bases.filter(b => b.id !== id)); setIsBaseModalOpen(false); setEditingBase(null); };
+  const handleSaveBase = async () => {
+    setBaseError('');
+    if (!newBase.razaoSocial.trim()) { setBaseError('Razão Social é obrigatória.'); return; }
+    if (!newBase.codigoCliente.trim()) { setBaseError('Código do Cliente é obrigatório.'); return; }
+    setBaseLoading(true);
+    try {
+      if (editingBase) {
+        const updated = await dbUpdateBase(editingBase.id, newBase);
+        setBases(bases.map(b => b.id === editingBase.id ? dbBaseToState(updated) : b));
+      } else {
+        const created = await dbCreateBase(newBase);
+        setBases([dbBaseToState(created), ...bases]);
+      }
+      setNewBase({ cnpjCpf:'', razaoSocial:'', nomeFantasia:'', proprietario:'', codigoCliente:'', status:'Ativo', plataforma:'N/A' });
+      setIsBaseModalOpen(false); setEditingBase(null); setDeleteBaseConfirm(false);
+    } catch (err: any) { setBaseError('Erro ao salvar: ' + err.message); }
+    finally { setBaseLoading(false); }
+  };
+
+  const handleDeleteBase = async (id: number) => { await dbDeleteBase(id); setBases(bases.filter(b => b.id !== id)); setIsBaseModalOpen(false); setEditingBase(null); setDeleteBaseConfirm(false); };
 
   const handleAddUser = async () => {
     setAddUserError(''); setAddUserSuccess('');
@@ -340,15 +360,82 @@ export default function App() {
                     <motion.div variants={itemVariants} className="bg-[#0C1635]/80 p-6 rounded-2xl border border-white/10">
                       <div className="flex justify-between items-center mb-6">
                         <h2 className="text-xl font-semibold">Base do Cliente</h2>
-                        {isUserAdmin && (<button onClick={() => { setEditingBase(null); setNewBase({ cnpjCpf:'', razaoSocial:'', nomeFantasia:'', proprietario:'', codigoCliente:'' }); setIsBaseModalOpen(true); }} className="bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] px-4 py-2 rounded-lg font-semibold hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00AEEF]/60 focus-visible:outline-none transition text-sm">+ Criar Nova Base</button>)}
+                        {isUserAdmin && (<button onClick={() => { setEditingBase(null); setNewBase({ cnpjCpf:'', razaoSocial:'', nomeFantasia:'', proprietario:'', codigoCliente:'', status:'Ativo', plataforma:'N/A' }); setBaseError(''); setDeleteBaseConfirm(false); setIsBaseModalOpen(true); }} className="bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] px-4 py-2 rounded-lg font-semibold hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#00AEEF]/60 focus-visible:outline-none transition text-sm">+ Criar Nova Base</button>)}
                       </div>
                       <AnimatePresence>
                         {isBaseModalOpen && (
                           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                            <motion.div initial={{ scale:0.9,opacity:0 }} animate={{ scale:1,opacity:1 }} exit={{ scale:0.9,opacity:0 }} className="bg-[#0C1635] p-6 rounded-2xl border border-white/10 w-full max-w-sm">
-                              <div className="flex justify-between items-center mb-6"><h4 className="font-semibold text-lg">{editingBase ? 'Editar Base' : 'Nova Base'}</h4><button onClick={() => setIsBaseModalOpen(false)} className="text-gray-400 hover:text-white">✕</button></div>
-                              <div className="space-y-3 mb-6">{[{ k:'cnpjCpf', p:'CNPJ / CPF' }, { k:'razaoSocial', p:'Razão Social' }, { k:'nomeFantasia', p:'Nome Fantasia' }, { k:'proprietario', p:'Proprietário' }, { k:'codigoCliente', p:'Código do Cliente' }].map(f => (<input key={f.k} type="text" placeholder={f.p} value={(newBase as any)[f.k]} onChange={e => setNewBase({...newBase,[f.k]:e.target.value})} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-4 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />))}</div>
-                              <div className="flex gap-2">{editingBase && (<button onClick={() => handleDeleteBase(editingBase.id)} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold transition">Remover</button>)}<button onClick={handleSaveBase} disabled={baseLoading} className={`${editingBase?'flex-1':'w-full'} bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] py-2 rounded-lg font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 disabled:opacity-70`}>{baseLoading && <Loader2 size={14} className="animate-spin"/>}{editingBase ? 'Salvar Alterações' : 'Criar Base'}</button></div>
+                            <motion.div initial={{ scale:0.9,opacity:0 }} animate={{ scale:1,opacity:1 }} exit={{ scale:0.9,opacity:0 }} className="bg-[#0C1635] rounded-2xl border border-white/10 w-full max-w-lg">
+                              {/* header */}
+                              <div className="flex justify-between items-center px-6 py-4 border-b border-white/10">
+                                <h4 className="font-semibold text-lg">{editingBase ? 'Editar Base' : 'Nova Base'}</h4>
+                                <button onClick={() => { setIsBaseModalOpen(false); setBaseError(''); setDeleteBaseConfirm(false); }} className="text-gray-400 hover:text-white w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5">✕</button>
+                              </div>
+                              {/* body */}
+                              <div className="p-6 space-y-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="col-span-2">
+                                    <label className="text-xs text-white/40 mb-1 block">Razão Social <span className="text-red-400">*</span></label>
+                                    <input type="text" placeholder="Nome da empresa" value={newBase.razaoSocial} onChange={e => setNewBase({...newBase, razaoSocial:e.target.value})} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-white/40 mb-1 block">CNPJ / CPF</label>
+                                    <input type="text" placeholder="00.000.000/0001-00" value={newBase.cnpjCpf} onChange={e => setNewBase({...newBase, cnpjCpf:e.target.value})} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-white/40 mb-1 block">Código do Cliente <span className="text-red-400">*</span></label>
+                                    <input type="text" placeholder="Ex: 56.064.056" value={newBase.codigoCliente} onChange={e => setNewBase({...newBase, codigoCliente:e.target.value})} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-white/40 mb-1 block">Nome Fantasia</label>
+                                    <input type="text" placeholder="Nome comercial" value={newBase.nomeFantasia} onChange={e => setNewBase({...newBase, nomeFantasia:e.target.value})} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-white/40 mb-1 block">Proprietário</label>
+                                    <input type="text" placeholder="Responsável" value={newBase.proprietario} onChange={e => setNewBase({...newBase, proprietario:e.target.value})} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white placeholder-white/30 hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm" />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-white/40 mb-1 block">Status</label>
+                                    <select value={newBase.status} onChange={e => setNewBase({...newBase, status:e.target.value})} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm">
+                                      <option value="Ativo">Ativo</option>
+                                      <option value="Inativo">Inativo</option>
+                                      <option value="Inadimplente">Inadimplente</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-white/40 mb-1 block">Plataforma</label>
+                                    <select value={newBase.plataforma} onChange={e => setNewBase({...newBase, plataforma:e.target.value})} className="w-full bg-[#080E24] border border-white/10 rounded-lg py-2 px-3 text-white hover:border-white/20 focus:border-[#00AEEF] outline-none transition-colors text-sm">
+                                      <option value="N/A">N/A</option>
+                                      <option value="Tracker">Tracker</option>
+                                      <option value="Onixsat">Onixsat</option>
+                                      <option value="Sascar">Sascar</option>
+                                      <option value="Autotrac">Autotrac</option>
+                                      <option value="Outra">Outra</option>
+                                    </select>
+                                  </div>
+                                </div>
+                                {baseError && <p className="text-xs text-red-400 bg-red-900/20 px-3 py-2 rounded-lg border border-red-800/40">{baseError}</p>}
+                              </div>
+                              {/* footer */}
+                              <div className="px-6 pb-6 flex gap-2">
+                                {editingBase && (
+                                  deleteBaseConfirm ? (
+                                    <>
+                                      <span className="text-xs text-red-400 flex items-center flex-1">Confirmar exclusão?</span>
+                                      <button onClick={() => handleDeleteBase(editingBase.id)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition">Excluir</button>
+                                      <button onClick={() => setDeleteBaseConfirm(false)} className="bg-white/5 hover:bg-white/10 text-white/60 px-4 py-2 rounded-lg text-sm transition">Cancelar</button>
+                                    </>
+                                  ) : (
+                                    <button onClick={() => setDeleteBaseConfirm(true)} className="bg-red-900/30 hover:bg-red-900/50 text-red-400 border border-red-800/30 px-4 py-2 rounded-lg font-semibold text-sm transition">Remover</button>
+                                  )
+                                )}
+                                {!deleteBaseConfirm && (
+                                  <button onClick={handleSaveBase} disabled={baseLoading} className="ml-auto bg-gradient-to-r from-[#00AEEF] to-[#00D1C1] text-[#0A1128] px-6 py-2 rounded-lg font-semibold hover:opacity-90 transition flex items-center gap-2 disabled:opacity-70 text-sm">
+                                    {baseLoading && <Loader2 size={14} className="animate-spin"/>}
+                                    {editingBase ? 'Salvar Alterações' : 'Criar Base'}
+                                  </button>
+                                )}
+                              </div>
                             </motion.div>
                           </div>
                         )}
@@ -359,7 +446,7 @@ export default function App() {
                             <div><h3 className="font-bold text-[#00D1C1]">{base.codigoCliente && <span className="text-white/40 mr-1">[{base.codigoCliente}]</span>}{base.razaoSocial}</h3><p className="text-sm text-white/60 mt-0.5">{base.cnpjCpf} · <span className={base.status==='Inadimplente'?'text-red-400':'text-green-400'}>{base.status}</span></p>{base.nomeFantasia && <p className="text-sm mt-0.5"><span className="text-white/40">Fantasia:</span> {base.nomeFantasia}</p>}<p className="text-sm flex items-center gap-1 mt-0.5"><Globe size={13} className="text-white/40"/><span className="text-white/40">Plataforma:</span> {base.plataforma}</p></div>
                             <div className="flex gap-2 flex-shrink-0 ml-4">
                               <button onClick={() => setSelectedClient(p => p===String(base.id)?null:String(base.id))} className="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-colors"><Package size={13}/> Dispositivos</button>
-                              {isUserAdmin && (<><button onClick={() => { setEditingBase(base); setNewBase({ cnpjCpf:base.cnpjCpf, razaoSocial:base.razaoSocial, nomeFantasia:base.nomeFantasia, proprietario:base.proprietario, codigoCliente:base.codigoCliente }); setIsBaseModalOpen(true); }} className="bg-[#1a4a8a] hover:bg-[#1e5aaa] text-white px-3 py-1.5 rounded-lg text-xs transition-colors">Config.</button><button onClick={() => { if (window.confirm(`Excluir a base "${base.razaoSocial}"? Esta ação não pode ser desfeita.`)) handleDeleteBase(base.id); }} className="bg-red-800 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs transition-colors">✕</button></>)}
+                              {isUserAdmin && (<button onClick={() => { setEditingBase(base); setNewBase({ cnpjCpf:base.cnpjCpf, razaoSocial:base.razaoSocial, nomeFantasia:base.nomeFantasia, proprietario:base.proprietario, codigoCliente:base.codigoCliente, status:base.status||'Ativo', plataforma:base.plataforma||'N/A' }); setBaseError(''); setDeleteBaseConfirm(false); setIsBaseModalOpen(true); }} className="bg-[#1a4a8a] hover:bg-[#1e5aaa] text-white px-3 py-1.5 rounded-lg text-xs transition-colors">Config.</button>)}
                             </div>
                           </div>
                           <AnimatePresence>
